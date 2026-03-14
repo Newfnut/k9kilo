@@ -6,12 +6,79 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="K9 Kilo">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
 <title>K9 Kilo</title>
 <style>
-  /* ... (Keep all your existing CSS here) ... */
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  :root { color-scheme: dark; supported-color-schemes: dark; }
+  html { background: #000000; }
+  :root {
+    --orange: #E8621A;
+    --orange-light: #FF7D35;
+    --orange-glow: rgba(232,98,26,0.35);
+    --orange-pale: rgba(232,98,26,0.12);
+    --bg: #000000;
+    --bg2: #1C1C1E;
+    --glass: #1C1C1E;
+    --glass-border: #38383A;
+    --glass-strong: #2C2C2E;
+    --grouped-card: #1C1C1E;
+    --grouped-inset: #2C2C2E;
+    --separator: #38383A;
+    --text: #FFFFFF;
+    --text-soft: rgba(255,255,255,0.65);
+    --text-muted: rgba(255,255,255,0.35);
+    --border: rgba(255,255,255,0.08);
+    --green: #34C759;
+    --green-pale: rgba(52,199,89,0.15);
+    --red: #FF453A;
+    --red-pale: rgba(255,69,58,0.15);
+    --input-bg: rgba(255,255,255,0.07);
+  }
+  body {
+    font-family: -apple-system, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', sans-serif;
+    background: #000000 !important;
+    min-height: 100vh;
+    max-width: 390px;
+    margin: 0 auto;
+    overscroll-behavior: none;
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF;
+  }
+  .header { position: sticky; top: 0; z-index: 20; background: #000000; }
+  .header-banner { position: relative; width: 100%; height: 180px; overflow: hidden; padding-top: env(safe-area-inset-top, 0px); }
+  .header-banner-img { width: 100%; height: 100%; object-fit: cover; object-position: center 18%; display: block; filter: brightness(0.75) contrast(1.1); }
+  .header-banner::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.0) 35%, rgba(0,0,0,0.0) 55%, rgba(0,0,0,0.85) 100%); z-index: 1; }
+  .card { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 20px; padding: 20px; margin: 12px 16px; position: relative; overflow: hidden; }
+  .card-title { font-size: 13px; font-weight: 600; letter-spacing: 0.5px; color: rgba(255,255,255,0.35) !important; margin-bottom: 12px; }
+  .big-num { font-size: 42px; font-weight: 800; color: #FFFFFF !important; line-height: 1; }
+  .stat-unit { font-size: 16px; font-weight: 600; color: rgba(255,255,255,0.35) !important; margin-left: 4px; }
+  .hidden { display: none !important; }
+  #login-screen { padding: 60px 24px; text-align: center; height: 100vh; display: flex; flex-direction: column; justify-content: center; }
+  input { background: var(--input-bg); border: 1px solid var(--glass-border); color: white; padding: 16px; border-radius: 12px; width: 100%; margin-bottom: 12px; font-size: 16px; }
+  .btn-primary { background: var(--orange); color: white; border: none; padding: 16px; border-radius: 12px; width: 100%; font-weight: 700; font-size: 16px; margin-top: 10px; }
 </style>
 </head>
 <body>
+
+  <div id="login-screen">
+    <h1 style="color: var(--orange); margin-bottom: 40px; font-size: 32px; letter-spacing: -1px;">k9kilo</h1>
+    <input type="email" id="email" placeholder="Email">
+    <input type="password" id="password" placeholder="Password">
+    <button class="btn-primary" onclick="handleLogin()">Sign In</button>
+  </div>
+
+  <div id="app-content" class="hidden">
+    <div class="header">
+      <div class="header-banner">
+        <img src="https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?q=80&w=2069" class="header-banner-img">
+      </div>
+    </div>
+    <div id="dogs-list">
+      </div>
+  </div>
+
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -30,24 +97,45 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
+    function handleLogin() {
+      const e = document.getElementById('email').value;
+      const p = document.getElementById('password').value;
+      auth.signInWithEmailAndPassword(e, p).catch(err => alert(err.message));
+    }
+
     auth.onAuthStateChanged(user => {
       if (user) {
-        // FIXED LINE BELOW: Now matches your Python script path
-        db.collection('users').doc(user.uid).collection('dogs')
-          .onSnapshot(snapshot => {
-            const dogsList = document.getElementById('dogs-list');
-            dogsList.innerHTML = ''; 
-            
-            snapshot.forEach(doc => {
-              const dog = doc.data();
-              // Logic to display dog name and their history...
-              console.log("Loaded:", doc.id);
-            });
-          });
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('app-content').classList.remove('hidden');
+        loadDogs(user.uid);
       } else {
-        // Redirect to login if not authenticated
+        document.getElementById('login-screen').classList.remove('hidden');
+        document.getElementById('app-content').classList.add('hidden');
       }
     });
+
+    function loadDogs(uid) {
+      db.collection('users').doc(uid).collection('dogs').onSnapshot(snapshot => {
+        const list = document.getElementById('dogs-list');
+        list.innerHTML = '';
+        snapshot.forEach(doc => {
+          const dog = doc.data();
+          const entries = dog.entries || [];
+          const lastWeight = entries.length > 0 ? entries[entries.length - 1].weight : '--';
+          
+          list.innerHTML += `
+            <div class="card">
+              <div class="card-title">${doc.id.toUpperCase()}</div>
+              <div>
+                <span class="big-num">${lastWeight}</span>
+                <span class="stat-unit">KG</span>
+              </div>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px; font-weight: 500;">LAST RECORDED WEIGHT</div>
+            </div>
+          `;
+        });
+      }, err => console.log("Error:", err));
+    }
   </script>
 </body>
 </html>
