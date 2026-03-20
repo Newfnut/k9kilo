@@ -69,8 +69,8 @@
     -webkit-text-fill-color: #FFFFFF;
   }
   .header-appname span, .goal-tag, .edit-btn, .restore-btn { color: #E8621A !important; -webkit-text-fill-color: #E8621A; }
-  .badge.up { color: #FF453A !important; -webkit-text-fill-color: #FF453A; }
-  .badge.down { color: #34C759 !important; -webkit-text-fill-color: #34C759; }
+  .badge.up { color: #34C759 !important; -webkit-text-fill-color: #34C759; }
+  .badge.down { color: #E8621A !important; -webkit-text-fill-color: #E8621A; }
   .badge.same { color: rgba(255,255,255,0.35) !important; -webkit-text-fill-color: rgba(255,255,255,0.35); }
 
   /* Subtle background texture */
@@ -257,10 +257,10 @@
     border-radius: 20px; padding: 3px 10px; font-size: 12px; font-weight: 700;
     margin-bottom: 8px; margin-left: 6px; vertical-align: bottom;
   }
-  .badge.up { background: var(--red-pale); color: var(--red); }
-  .badge.down { background: var(--green-pale); color: var(--green); }
+  .badge.up { background: var(--green-pale); color: var(--green); }
+  .badge.down { background: var(--orange-pale); color: var(--orange); }
   .badge.same { background: rgba(255,255,255,0.08); color: var(--text-muted); }
-  .cur-meta { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.7; }
+  .cur-meta { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.7; white-space: pre-line; }
 
   /* ORANGE ACCENT LINE on current weight card */
   .card-accent { border-left: 3px solid var(--orange); padding-left: 14px; }
@@ -346,8 +346,8 @@
   .history-weight { font-size: 16px; color: var(--text); font-weight: 700; }
   .history-meta-primary { font-size: 12px; color: var(--text-soft); font-weight: 400; margin-top: 3px; line-height: 1.5; }
   .history-meta-secondary { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
-  .history-diff-up { color: var(--orange); font-size: 11px; font-weight: 600; }
-  .history-diff-down { color: #30D158; font-size: 11px; font-weight: 600; }
+  .history-diff-up { color: #34C759; font-size: 11px; font-weight: 600; }
+  .history-diff-down { color: var(--orange); font-size: 11px; font-weight: 600; }
   .history-diff-same { color: var(--text-muted); font-size: 11px; font-weight: 400; }
   .history-arrow { font-size: 13px; margin-right: 4px; }
   .delete-btn {
@@ -456,9 +456,9 @@
     cursor: pointer; font-family: inherit; transition: all 0.15s;
   }
   .dog-pill.active {
-    outline: none; background: var(--orange-pale);
-    color: var(--orange); font-weight: 700;
-    box-shadow: 0 0 12px var(--orange-glow);
+    outline: none; background: var(--orange);
+    color: white; font-weight: 700;
+    box-shadow: 0 2px 8px var(--orange-glow);
   }
 
   .empty { text-align: center; padding: 20px 0; font-size: 14px; color: var(--text-muted); }
@@ -605,6 +605,11 @@
       <div class="stat"><div class="card-title">Entries</div><div><span class="stat-val" id="stat-count">0</span></div></div>
     </div>
   </div>
+
+  <div class="card" id="card-history" style="display:none">
+    <div class="card-title">History</div>
+    <div id="history-list"><div class="empty">No entries yet</div></div>
+  </div>
 </div>
 
 <div id="screen-log" class="scroll-area" style="display:none">
@@ -634,11 +639,7 @@
     <button class="btn" onclick="addEntry()">Save Entry</button>
   </div>
 
-  <div class="card">
-    <div class="card-title">History</div>
-    <div id="history-list"><div class="empty">No entries yet</div></div>
   </div>
-</div>
 
 <div id="screen-profile" class="scroll-area" style="display:none">
   <div class="card">
@@ -855,6 +856,7 @@ function renderHome() {
     document.getElementById('card-current').style.display='none';
     document.getElementById('card-chart').style.display='none';
     document.getElementById('card-stats').style.display='none';
+    document.getElementById('card-history').style.display='none';
     return;
   }
   document.getElementById('card-current').style.display='block';
@@ -892,31 +894,43 @@ function renderHome() {
     document.getElementById('card-chart').style.display='none';
     document.getElementById('card-stats').style.display='none';
   }
+
+  // Always show history on the Summary tab
+  document.getElementById('card-history').style.display='block';
+  renderLog();
 }
 
 let chartData = []; // store for tooltip
 
 function renderChart(s, target) {
-  chartData = s;
+  // Filter to last 2 years only
+  const twoYearsAgo = new Date();
+  twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+  const filtered = s.filter(e => new Date(e.date + 'T12:00:00') >= twoYearsAgo);
+  const displayData = filtered.length >= 2 ? filtered : s;
+  chartData = displayData;
   const W=280,H=90;
-  const weights=s.map(e=>e.weight);
+  const weights=displayData.map(e=>e.weight);
   const allVals=target?[...weights,target]:weights;
   const minV=Math.min(...allVals)-2, maxV=Math.max(...allVals)+2;
-  const px=i=>(i/(s.length-1))*(W-20)+10;
+  // Extend dots close to edges: 4px padding
+  const PAD=4;
+  const px=i=>(displayData.length===1)?W/2:(i/(displayData.length-1))*(W-PAD*2)+PAD;
   const py=v=>H-((v-minV)/(maxV-minV))*(H-20)-10;
-  const pathD=s.map((e,i)=>(i===0?'M':'L')+' '+px(i)+' '+py(e.weight)).join(' ');
-  const areaD=pathD+' L '+px(s.length-1)+' '+H+' L '+px(0)+' '+H+' Z';
+  const pathD=displayData.map((e,i)=>(i===0?'M':'L')+' '+px(i)+' '+py(e.weight)).join(' ');
+  const areaD=pathD+' L '+px(displayData.length-1)+' '+H+' L '+px(0)+' '+H+' Z';
   let targetLine='';
   if(target){
     const ty=py(target);
-    targetLine=`<line x1="10" y1="${ty}" x2="${W-10}" y2="${ty}" stroke="#E8621A" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.6"/>
-    <text x="${W-12}" y="${ty-4}" font-size="9" fill="#E8621A" text-anchor="end" font-family="-apple-system,sans-serif" opacity="0.8">ideal</text>`;
+    targetLine=`<line x1="${PAD}" y1="${ty}" x2="${W-PAD}" y2="${ty}" stroke="#E8621A" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.6"/>
+    <text x="${W-PAD-2}" y="${ty-4}" font-size="9" fill="#E8621A" text-anchor="end" font-family="-apple-system,sans-serif" opacity="0.8">ideal</text>`;
     document.getElementById('goal-label').textContent='Ideal: '+cvt(target)+' '+unit;
   } else {document.getElementById('goal-label').textContent='';}
 
-  // Interactive touch zones — large invisible hit targets behind each dot
-  const hitTargets=s.map((e,i)=>`<circle cx="${px(i)}" cy="${py(e.weight)}" r="18" fill="transparent" class="chart-hit" data-i="${i}" style="cursor:pointer"/>`).join('');
-  const dots=s.map((e,i)=>`<circle cx="${px(i)}" cy="${py(e.weight)}" r="4" fill="#000000" stroke="#E8621A" stroke-width="2.5" class="chart-dot" data-i="${i}" style="cursor:pointer;transition:r 0.1s"/>`).join('');
+  // Filled dots (solid circles) + large invisible hit targets
+  const DOT_R=3;
+  const hitTargets=displayData.map((e,i)=>`<circle cx="${px(i)}" cy="${py(e.weight)}" r="16" fill="transparent" class="chart-hit" data-i="${i}" style="cursor:pointer"/>`).join('');
+  const dots=displayData.map((e,i)=>`<circle cx="${px(i)}" cy="${py(e.weight)}" r="${DOT_R}" fill="#E8621A" stroke="none" class="chart-dot" data-i="${i}" style="cursor:pointer;transition:r 0.1s"/>`).join('');
 
   document.getElementById('sparkline').innerHTML=`
     <defs>
@@ -931,8 +945,8 @@ function renderChart(s, target) {
     ${hitTargets}
     ${dots}`;
 
-  document.getElementById('chart-start').textContent=fmtDate(s[0].date).replace(/,.*$/,'');
-  document.getElementById('chart-end').textContent=fmtDate(s[s.length-1].date).replace(/,.*$/,'');
+  document.getElementById('chart-start').textContent=fmtDate(displayData[0].date).replace(/,.*$/,'');
+  document.getElementById('chart-end').textContent=fmtDate(displayData[displayData.length-1].date).replace(/,.*$/,'');
 
   // Attach touch/hover events after render
   const svg=document.getElementById('sparkline');
@@ -956,14 +970,14 @@ function renderChart(s, target) {
     tooltip.style.left=left+'px';
     tooltip.style.top=top+'px';
     // highlight dot
-    svg.querySelectorAll('.chart-dot').forEach(d=>{ d.setAttribute('r','4'); d.style.stroke='#E8621A'; });
-    svgEl.setAttribute('r','6');
-    svgEl.style.stroke='#FF7D35';
+    svg.querySelectorAll('.chart-dot').forEach(d=>{ d.setAttribute('r',String(DOT_R)); d.style.fill='#E8621A'; });
+    svgEl.setAttribute('r',String(DOT_R+2));
+    svgEl.style.fill='#FF7D35';
   }
 
   function hideTip() {
     tooltip.style.display='none';
-    svg.querySelectorAll('.chart-dot').forEach(d=>{ d.setAttribute('r','4'); d.style.stroke='#E8621A'; });
+    svg.querySelectorAll('.chart-dot').forEach(d=>{ d.setAttribute('r',String(DOT_R)); d.style.fill='#E8621A'; });
   }
 
   svg.querySelectorAll('.chart-hit, .chart-dot').forEach(el => {
