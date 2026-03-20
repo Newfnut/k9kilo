@@ -69,8 +69,8 @@
     -webkit-text-fill-color: #FFFFFF;
   }
   .header-appname span, .goal-tag, .edit-btn, .restore-btn { color: #E8621A !important; -webkit-text-fill-color: #E8621A; }
-  .badge.up { color: #34C759 !important; -webkit-text-fill-color: #34C759; }
-  .badge.down { color: #E8621A !important; -webkit-text-fill-color: #E8621A; }
+  .badge.up { color: #FF453A !important; -webkit-text-fill-color: #FF453A; }
+  .badge.down { color: #34C759 !important; -webkit-text-fill-color: #34C759; }
   .badge.same { color: rgba(255,255,255,0.35) !important; -webkit-text-fill-color: rgba(255,255,255,0.35); }
 
   /* Subtle background texture */
@@ -91,24 +91,16 @@
   .header-banner {
     position: relative;
     width: 100%;
-    height: 200px;
+    height: 180px;
     overflow: hidden;
     padding-top: env(safe-area-inset-top, 0px);
-    transition: height 0.18s ease;
-  }
-  .header-banner.scrolled {
-    height: 110px;
   }
   .header-banner-img {
     width: 100%; height: 100%;
-    object-fit: contain;
-    object-position: center center;
+    object-fit: cover;
+    object-position: center 18%;
     display: block;
-    filter: brightness(0.82) contrast(1.08);
-    padding: 6px 0 0;
-  }
-  .header-banner.scrolled .header-banner-img {
-    object-position: center 30%;
+    filter: brightness(0.75) contrast(1.1);
   }
   /* Gradient overlays to blend into black */
   .header-banner::before {
@@ -258,15 +250,15 @@
   .logo-hero-sub { font-size: 12px; color: var(--text-soft); margin-top: 2px; }
 
   /* CURRENT WEIGHT */
-  .big-num { font-size: 44px; font-weight: 800; color: var(--text); letter-spacing: -2px; line-height: 1; }
+  .big-num { font-size: 56px; font-weight: 800; color: var(--text); letter-spacing: -3px; line-height: 1; }
   .unit-sm { font-size: 20px; color: var(--text-muted); margin-bottom: 8px; vertical-align: bottom; font-weight: 300; }
   .badge {
     display: inline-flex; align-items: center; gap: 3px;
     border-radius: 20px; padding: 3px 10px; font-size: 12px; font-weight: 700;
     margin-bottom: 8px; margin-left: 6px; vertical-align: bottom;
   }
-  .badge.up { background: var(--green-pale); color: var(--green); }
-  .badge.down { background: var(--orange-pale); color: var(--orange); }
+  .badge.up { background: var(--red-pale); color: var(--red); }
+  .badge.down { background: var(--green-pale); color: var(--green); }
   .badge.same { background: rgba(255,255,255,0.08); color: var(--text-muted); }
   .cur-meta { font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.7; }
 
@@ -276,7 +268,7 @@
   /* CHART */
   .goal-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
   .goal-tag { font-size: 11px; color: var(--orange); font-weight: 700; }
-  svg.chart { width: 100%; height: 110px; display: block; }
+  svg.chart { width: 100%; height: 90px; }
   .chart-labels { display: flex; justify-content: space-between; margin-top: 4px; }
   .chart-label { font-size: 10px; color: var(--text-muted); }
 
@@ -503,28 +495,6 @@
     border-bottom: 1px solid rgba(232,98,26,0.2); font-size: 11px;
     color: var(--text-muted); position: relative; z-index: 10;
   }
-  /* ARCHIVED PET BUBBLES */
-  .archived-bubble {
-    flex-shrink: 0; padding: 6px 16px; border-radius: 20px;
-    border: 1px solid var(--glass-border); background: var(--glass);
-    font-size: 13px; font-weight: 500; color: var(--text-muted);
-    cursor: pointer; font-family: inherit; transition: all 0.15s;
-  }
-  .archived-bubble.expanded {
-    background: var(--orange-pale); color: var(--orange);
-    border-color: rgba(232,98,26,0.4); font-weight: 700;
-  }
-  .archived-history {
-    margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--separator);
-  }
-  .archived-history-name {
-    font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 10px;
-  }
-  .archived-edit-btn {
-    background: none; border: none; color: var(--orange);
-    font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer;
-  }
-
   .auth-signout-btn {
     font-size: 11px; color: var(--orange); background: none; border: none;
     font-family: inherit; font-weight: 700; cursor: pointer; padding: 2px 6px;
@@ -604,9 +574,7 @@
       <div>
         <span class="big-num" id="cur-weight">—</span>
         <span class="unit-sm" id="cur-unit"> lbs</span>
-      </div>
-      <div>
-        <span class="badge" id="cur-badge" style="display:none;margin-left:0;margin-top:4px"></span>
+        <span class="badge" id="cur-badge" style="display:none"></span>
       </div>
       <div class="cur-meta" id="cur-meta"></div>
     </div>
@@ -618,7 +586,7 @@
       <div class="goal-tag" id="goal-label"></div>
     </div>
     <div class="chart-wrap">
-      <svg class="chart" id="sparkline" viewBox="0 0 340 110" preserveAspectRatio="none"></svg>
+      <svg class="chart" id="sparkline" viewBox="0 0 280 90"></svg>
       <div id="chart-tooltip" class="chart-tooltip" style="display:none;position:absolute">
         <div class="chart-tooltip-val" id="tt-val"></div>
         <div class="chart-tooltip-date" id="tt-date"></div>
@@ -637,17 +605,9 @@
       <div class="stat"><div class="card-title">Entries</div><div><span class="stat-val" id="stat-count">0</span></div></div>
     </div>
   </div>
-
-  <div class="card" id="card-records" style="display:none">
-    <div class="card-title">Records</div>
-    <div id="home-history-list"><div class="empty">No entries yet</div></div>
-  </div>
 </div>
 
 <div id="screen-log" class="scroll-area" style="display:none">
-  <div style="padding: 12px 0 8px">
-    <div class="dog-switcher" id="dog-switcher-log"></div>
-  </div>
   <div class="card">
     <div class="card-title">Log Weight</div>
     <div class="two-col">
@@ -681,13 +641,6 @@
 </div>
 
 <div id="screen-profile" class="scroll-area" style="display:none">
-
-  <!-- Active dog switcher bubbles -->
-  <div style="padding: 12px 0 8px">
-    <div class="dog-switcher" id="dog-switcher-profile"></div>
-  </div>
-
-  <!-- Pet Profile card (active dog only) -->
   <div class="card">
     <div class="profile-header">
       <div class="card-title" style="margin:0">Pet Profile</div>
@@ -710,21 +663,9 @@
         <div class="field-wrap"><p class="field-label" id="edit-goal-label">Ideal Weight (lbs)</p><input type="number" id="edit-goal" step="0.1" min="0"></div>
       </div>
       <div class="field-wrap"><p class="field-label">Default Location / Scale</p><input type="text" id="edit-location" placeholder="e.g. Vet office"></div>
-      <!-- Archive section inside edit mode -->
-      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--separator)">
-        <div class="field-wrap">
-          <p class="field-label">Archive Date <span style="color:var(--text-muted);font-weight:400">(stops age count)</span></p>
-          <input type="date" id="archive-date-input">
-        </div>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <button class="btn btn-glass" style="flex:1" onclick="archiveCurrentDog()">Archive This Pet</button>
-          <button class="btn btn-danger" style="flex:1" onclick="confirmDeletePet()">Delete This Pet</button>
-        </div>
-      </div>
     </div>
   </div>
 
-  <!-- Add Another Pet card -->
   <div class="card">
     <div class="profile-header">
       <div class="card-title" style="margin:0">Add Another Pet</div>
@@ -732,13 +673,20 @@
     <button class="btn btn-subtle" onclick="addNewDog()">+ Add Pet</button>
   </div>
 
-  <!-- Archived pets card -->
-  <div class="card" id="archived-pets-card" style="display:none">
-    <div class="card-title">Archived Pets</div>
-    <div id="archive-bubbles" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px"></div>
-    <div id="archived-history-container"></div>
+  <div class="card">
+    <div class="card-title">Archive</div>
+    <div id="archive-list"><div class="empty">No archived pets</div></div>
+    <p style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.5">Archive pets that have passed — they stay accessible but won't appear on the main screen.</p>
   </div>
 
+  <div style="padding: 0 14px; display:flex; flex-direction:column; gap:8px;">
+    <button class="btn btn-glass" onclick="archiveCurrentDog()">Archive This Pet</button>
+    <div class="field-wrap" style="margin-top:10px">
+      <p class="field-label">Archive Date (stops age count)</p>
+      <input type="date" id="archive-date-input">
+    </div>
+    <button class="btn btn-danger" onclick="confirmDeletePet()">Delete This Pet</button>
+  </div>
 </div>
 
 <!-- TAB BAR now lives inside .header above -->
@@ -770,7 +718,7 @@
         <p class="field-label">Location / Scale</p>
         <div style="display:flex;gap:8px">
           <input type="text" id="ee-location" placeholder="e.g. Vet office" style="flex:1">
-          <button type="button" onclick="getGPS('ee-location')" id="ee-gps-btn" style="flex-shrink:0;padding:0 14px;border-radius:12px;border:1px solid var(--glass-border);background:var(--input-bg);font-size:18px;cursor:pointer">📍</button>
+          <button type="button" onclick="getGPS('ee-location')" style="flex-shrink:0;padding:0 14px;border-radius:12px;border:1px solid var(--glass-border);background:var(--input-bg);font-size:18px;cursor:pointer">📍</button>
         </div>
       </div>
       <div class="field-wrap">
@@ -878,6 +826,7 @@ function switchTab(tab) {
     document.getElementById('tab-'+t).classList.toggle('active',t===tab);
   });
   render();
+  if(tab==='log') setTimeout(tryAutoGPS,100);
 }
 
 function render() {
@@ -888,12 +837,9 @@ function render() {
 
 function renderSwitcher() {
   const dogs=activeDogs();
-  const html=dogs.map(d=>
+  document.getElementById('dog-switcher').innerHTML=dogs.map(d=>
     `<button class="dog-pill ${d.id===state.activeDogId?'active':''}" onclick="selectDog(${d.id})">${d.name}</button>`
   ).join('');
-  ['dog-switcher','dog-switcher-log','dog-switcher-profile'].forEach(id=>{
-    const el=document.getElementById(id); if(el) el.innerHTML=html;
-  });
 }
 
 function selectDog(id){ state.activeDogId=id; save(); render(); }
@@ -909,7 +855,6 @@ function renderHome() {
     document.getElementById('card-current').style.display='none';
     document.getElementById('card-chart').style.display='none';
     document.getElementById('card-stats').style.display='none';
-    document.getElementById('card-records').style.display='none';
     return;
   }
   document.getElementById('card-current').style.display='block';
@@ -937,11 +882,7 @@ function renderHome() {
     document.getElementById('card-chart').style.display='block';
     document.getElementById('card-stats').style.display='block';
     renderChart(s,dog.targetWeight);
-    // Stats: only last 18 months
-    const cutoff18 = new Date(); cutoff18.setMonth(cutoff18.getMonth()-18);
-    const s18 = s.filter(e => new Date(e.date+'T12:00:00') >= cutoff18);
-    const statsEntries = s18.length ? s18 : s;
-    const weights=statsEntries.map(e=>e.weight);
+    const weights=s.map(e=>e.weight);
     document.getElementById('stat-max').textContent=cvt(Math.max(...weights));
     document.getElementById('stat-min').textContent=cvt(Math.min(...weights));
     document.getElementById('stat-max-u').textContent=unit;
@@ -951,93 +892,49 @@ function renderHome() {
     document.getElementById('card-chart').style.display='none';
     document.getElementById('card-stats').style.display='none';
   }
-  // Records on home screen
-  document.getElementById('card-records').style.display='block';
-  renderHomeRecords(dog);
-}
-
-function renderHomeRecords(dog) {
-  const s=sorted(dog).reverse();
-  const list=document.getElementById('home-history-list');
-  if(s.length===0){list.innerHTML='<div class="empty">No entries yet</div>';return;}
-  list.innerHTML=s.map((e,i)=>{
-    const ageAt=dogAge(dog.birthday,e.date,dog);
-    let primary=fmtDate(e.date);
-    if(ageAt) primary+=' · '+ageAt;
-    let diffHtml='';
-    if(i<s.length-1){
-      const prev=s[i+1];
-      const diff=cvt(e.weight)-cvt(prev.weight);
-      const absDiff=Math.abs(diff).toFixed(1);
-      if(diff>0) diffHtml=` <span class="history-diff-up">▲ +${absDiff} ${unit}</span>`;
-      else if(diff<0) diffHtml=` <span class="history-diff-down">▼ −${absDiff} ${unit}</span>`;
-      else diffHtml=` <span class="history-diff-same">— no change</span>`;
-    }
-    let secondary='';
-    if(e.location) secondary+='📍 '+e.location;
-    if(e.notes) secondary+=(secondary?'\n':'')+'💬 '+e.notes;
-    const realIdx=dog.entries.findIndex(en=>en.date===e.date&&en.weight===e.weight&&(en.notes||'')===(e.notes||''));
-    return `<div class="history-item">
-      <div style="flex:1;min-width:0">
-        <div class="history-weight">${cvt(e.weight)} ${unit}</div>
-        <div class="history-meta-primary">${primary}${diffHtml}</div>
-        ${secondary?`<div class="history-meta-secondary" style="white-space:pre-line">${secondary}</div>`:''}
-      </div>
-      <div style="display:flex;align-items:center;gap:2px;flex-shrink:0">
-        <button style="background:none;border:none;color:rgba(232,98,26,0.6);font-size:15px;cursor:pointer;padding:4px 6px;border-radius:8px" onclick="openEditEntry(${realIdx})">✏️</button>
-        <button class="delete-btn" onclick="confirmDelete('${e.date}',${e.weight},'${(e.notes||'').replace(/'/g,"\\'")}')">×</button>
-      </div>
-    </div>`;
-  }).join('');
 }
 
 let chartData = []; // store for tooltip
 
-function renderChart(allEntries, target) {
-  // Filter to last 24 months only — weight data only, future-proof
-  const cutoff24 = new Date(); cutoff24.setMonth(cutoff24.getMonth()-24);
-  const s = allEntries.filter(e => new Date(e.date+'T12:00:00') >= cutoff24);
-  const displayS = s.length >= 2 ? s : allEntries; // fall back to all if fewer than 2 in window
-  chartData = displayS;
-
-  const W=340, H=110;
-  const weights = displayS.map(e => e.weight);
-  const minV = Math.min(...weights) - 1.5;
-  const maxV = Math.max(...weights) + 1.5;
-  const px = i => (i/(displayS.length-1))*(W-8)+4;
-  const py = v => H - ((v-minV)/(maxV-minV))*(H-16) - 8;
-  const pathD = displayS.map((e,i)=>(i===0?'M':'L')+' '+px(i).toFixed(1)+' '+py(e.weight).toFixed(1)).join(' ');
-  const areaD = pathD+' L '+px(displayS.length-1).toFixed(1)+' '+H+' L '+px(0).toFixed(1)+' '+H+' Z';
-
+function renderChart(s, target) {
+  chartData = s;
+  const W=280,H=90;
+  const weights=s.map(e=>e.weight);
+  const allVals=target?[...weights,target]:weights;
+  const minV=Math.min(...allVals)-2, maxV=Math.max(...allVals)+2;
+  const px=i=>(i/(s.length-1))*(W-20)+10;
+  const py=v=>H-((v-minV)/(maxV-minV))*(H-20)-10;
+  const pathD=s.map((e,i)=>(i===0?'M':'L')+' '+px(i)+' '+py(e.weight)).join(' ');
+  const areaD=pathD+' L '+px(s.length-1)+' '+H+' L '+px(0)+' '+H+' Z';
   let targetLine='';
   if(target){
     const ty=py(target);
-    targetLine=`<line x1="4" y1="${ty.toFixed(1)}" x2="${W-4}" y2="${ty.toFixed(1)}" stroke="#E8621A" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.6"/>
-    <text x="${W-6}" y="${(ty-4).toFixed(1)}" font-size="9" fill="#E8621A" text-anchor="end" font-family="-apple-system,sans-serif" opacity="0.8">ideal</text>`;
+    targetLine=`<line x1="10" y1="${ty}" x2="${W-10}" y2="${ty}" stroke="#E8621A" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.6"/>
+    <text x="${W-12}" y="${ty-4}" font-size="9" fill="#E8621A" text-anchor="end" font-family="-apple-system,sans-serif" opacity="0.8">ideal</text>`;
     document.getElementById('goal-label').textContent='Ideal: '+cvt(target)+' '+unit;
-  } else { document.getElementById('goal-label').textContent=''; }
+  } else {document.getElementById('goal-label').textContent='';}
 
-  // Filled dot markers (solid fill, no ring)
-  const hitTargets = displayS.map((e,i)=>`<circle cx="${px(i).toFixed(1)}" cy="${py(e.weight).toFixed(1)}" r="16" fill="transparent" class="chart-hit" data-i="${i}" style="cursor:pointer"/>`).join('');
-  const dots = displayS.map((e,i)=>`<circle cx="${px(i).toFixed(1)}" cy="${py(e.weight).toFixed(1)}" r="3.5" fill="#E8621A" class="chart-dot" data-i="${i}" style="cursor:pointer;transition:r 0.1s"/>`).join('');
+  // Interactive touch zones — large invisible hit targets behind each dot
+  const hitTargets=s.map((e,i)=>`<circle cx="${px(i)}" cy="${py(e.weight)}" r="18" fill="transparent" class="chart-hit" data-i="${i}" style="cursor:pointer"/>`).join('');
+  const dots=s.map((e,i)=>`<circle cx="${px(i)}" cy="${py(e.weight)}" r="4" fill="#000000" stroke="#E8621A" stroke-width="2.5" class="chart-dot" data-i="${i}" style="cursor:pointer;transition:r 0.1s"/>`).join('');
 
   document.getElementById('sparkline').innerHTML=`
     <defs>
       <linearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#E8621A" stop-opacity="0.35"/>
+        <stop offset="0%" stop-color="#E8621A" stop-opacity="0.4"/>
         <stop offset="100%" stop-color="#E8621A" stop-opacity="0"/>
       </linearGradient>
     </defs>
     <path d="${areaD}" fill="url(#fill)"/>
-    <path d="${pathD}" fill="none" stroke="#E8621A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="${pathD}" fill="none" stroke="#E8621A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
     ${targetLine}
     ${hitTargets}
     ${dots}`;
 
-  document.getElementById('chart-start').textContent=fmtDate(displayS[0].date).replace(/,.*$/,'');
-  document.getElementById('chart-end').textContent=fmtDate(displayS[displayS.length-1].date).replace(/,.*$/,'');
+  document.getElementById('chart-start').textContent=fmtDate(s[0].date).replace(/,.*$/,'');
+  document.getElementById('chart-end').textContent=fmtDate(s[s.length-1].date).replace(/,.*$/,'');
 
-  // Tooltip events
+  // Attach touch/hover events after render
   const svg=document.getElementById('sparkline');
   const tooltip=document.getElementById('chart-tooltip');
 
@@ -1045,6 +942,7 @@ function renderChart(allEntries, target) {
     const e=chartData[i];
     document.getElementById('tt-val').textContent=cvt(e.weight)+' '+unit;
     document.getElementById('tt-date').textContent=fmtDate(e.date);
+    // Position relative to chart-wrap
     const wrap=svg.parentElement;
     const svgRect=svg.getBoundingClientRect();
     const wrapRect=wrap.getBoundingClientRect();
@@ -1057,25 +955,35 @@ function renderChart(allEntries, target) {
     tooltip.style.display='block';
     tooltip.style.left=left+'px';
     tooltip.style.top=top+'px';
-    svg.querySelectorAll('.chart-dot').forEach(d=>{ d.setAttribute('r','3.5'); d.style.fill='#E8621A'; });
-    svgEl.setAttribute('r','5.5'); svgEl.style.fill='#FF7D35';
+    // highlight dot
+    svg.querySelectorAll('.chart-dot').forEach(d=>{ d.setAttribute('r','4'); d.style.stroke='#E8621A'; });
+    svgEl.setAttribute('r','6');
+    svgEl.style.stroke='#FF7D35';
   }
 
   function hideTip() {
     tooltip.style.display='none';
-    svg.querySelectorAll('.chart-dot').forEach(d=>{ d.setAttribute('r','3.5'); d.style.fill='#E8621A'; });
+    svg.querySelectorAll('.chart-dot').forEach(d=>{ d.setAttribute('r','4'); d.style.stroke='#E8621A'; });
   }
 
   svg.querySelectorAll('.chart-hit, .chart-dot').forEach(el => {
-    el.addEventListener('mouseenter', () => { const i=parseInt(el.getAttribute('data-i')); showTip(i, svg.querySelectorAll('.chart-dot')[i]); });
+    el.addEventListener('mouseenter', () => {
+      const i=parseInt(el.getAttribute('data-i'));
+      const dot=svg.querySelectorAll('.chart-dot')[i];
+      showTip(i, dot);
+    });
     el.addEventListener('mouseleave', hideTip);
-    el.addEventListener('touchstart', (ev) => { ev.preventDefault(); const i=parseInt(el.getAttribute('data-i')); showTip(i, svg.querySelectorAll('.chart-dot')[i]); }, {passive:false});
+    el.addEventListener('touchstart', (ev) => {
+      ev.preventDefault();
+      const i=parseInt(el.getAttribute('data-i'));
+      const dot=svg.querySelectorAll('.chart-dot')[i];
+      showTip(i, dot);
+    }, {passive:false});
     el.addEventListener('touchend', () => setTimeout(hideTip, 1800));
   });
 }
 
 function renderLog() {
-  renderSwitcher();
   const dog=activeDog();
   document.getElementById('input-weight-label').textContent='Weight ('+unit+')';
   document.getElementById('input-weight').placeholder=unit==='lbs'?'62.5':'28.3';
@@ -1145,7 +1053,7 @@ function doDelete(){
   if(!pendingDelete)return;
   const dog=activeDog();
   dog.entries=dog.entries.filter(e=>!(e.date===pendingDelete.date&&e.weight===pendingDelete.weight));
-  save();renderLog();if(currentTab==='home')renderHome();else{const dog=activeDog();if(dog)renderHomeRecords(dog);}showToast('Entry deleted');
+  save();renderLog();if(currentTab==='home')renderHome();showToast('Entry deleted');
 }
 
 function openEditEntry(idx){
@@ -1170,7 +1078,6 @@ function saveEditEntry(){
 }
 
 function renderProfile(){
-  renderSwitcher();
   const dog=activeDog(); if(!dog)return;
   const a=dogAge(dog.birthday,null,dog);
   document.getElementById('profile-view').innerHTML=`
@@ -1179,171 +1086,7 @@ function renderProfile(){
     <div class="field-wrap"><p class="field-label">Birthday</p><p class="field-val">${dog.birthday?fmtDateLong(dog.birthday)+(a?' ('+a+')':''):'—'}</p></div>
     <div class="field-wrap"><p class="field-label">Ideal Weight</p><p class="field-val">${dog.targetWeight?cvt(dog.targetWeight)+' '+unit:'—'}</p></div>
     <div class="field-wrap"><p class="field-label">Default Location / Scale</p><p class="field-val">${dog.defaultLocation||'—'}</p></div>`;
-  renderArchivedPets();
-}
-
-let expandedArchivedId=null;
-let archivedEditMode=null;
-
-function renderArchivedPets(){
-  const archived=archivedDogs();
-  const card=document.getElementById('archived-pets-card');
-  if(archived.length===0){card.style.display='none';return;}
-  card.style.display='block';
-  // Render bubble buttons
-  document.getElementById('archive-bubbles').innerHTML=archived.map(d=>
-    `<button class="archived-bubble${expandedArchivedId===d.id?' expanded':''}" onclick="toggleArchivedHistory(${d.id})">${d.name}</button>`
-  ).join('');
-  // Render expanded history if any
-  const container=document.getElementById('archived-history-container');
-  if(expandedArchivedId===null){container.innerHTML='';return;}
-  const d=archived.find(x=>x.id===expandedArchivedId);
-  if(!d){container.innerHTML='';return;}
-  const isEdit=archivedEditMode===d.id;
-  const a=dogAge(d.birthday,d.archivedDate,d);
-  if(isEdit){
-    const knownBreeds=['Golden Retriever','Newfoundland'];
-    const isKnown=knownBreeds.includes(d.breed);
-    container.innerHTML=`
-      <div class="archived-history">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-          <div class="archived-history-name">${d.name}</div>
-          <button class="archived-edit-btn" onclick="toggleArchivedEdit(${d.id})">Save</button>
-        </div>
-        <div class="field-wrap"><p class="field-label">Name</p><input type="text" id="ae-name-${d.id}" value="${d.name}"></div>
-        <div class="field-wrap">
-          <p class="field-label">Type / Breed</p>
-          <select id="ae-breed-${d.id}" onchange="toggleBreedOther('ae-breed-${d.id}','ae-breed-other-${d.id}')">
-            <option${isKnown&&d.breed==='Golden Retriever'?' selected':''}>Golden Retriever</option>
-            <option${isKnown&&d.breed==='Newfoundland'?' selected':''}>Newfoundland</option>
-            <option${!isKnown?' selected':''}>Other</option>
-          </select>
-          <input type="text" id="ae-breed-other-${d.id}" placeholder="Enter breed or pet type" style="margin-top:8px;display:${!isKnown?'block':'none'}" value="${!isKnown?d.breed:''}">
-        </div>
-        <div class="two-col">
-          <div class="field-wrap"><p class="field-label">Birthday</p><input type="date" id="ae-birthday-${d.id}" value="${d.birthday||''}"></div>
-          <div class="field-wrap"><p class="field-label">Ideal Weight (${unit})</p><input type="number" id="ae-goal-${d.id}" step="0.1" min="0" value="${d.targetWeight?cvt(d.targetWeight):''}"></div>
-        </div>
-        <div class="field-wrap"><p class="field-label">Archive Date</p><input type="date" id="ae-archived-${d.id}" value="${d.archivedDate||''}"></div>
-        <div style="display:flex;gap:8px;margin-top:12px">
-          <button class="btn btn-glass" style="flex:1" onclick="restoreDog(${d.id})">Restore</button>
-          <button class="btn btn-danger" style="flex:1" onclick="confirmDeletePet(${d.id})">Delete</button>
-        </div>
-      </div>`;
-  } else {
-    const entries=d.entries||[];
-    const sorted=[...entries].sort((a,b)=>b.date.localeCompare(a.date));
-    const entriesHtml=sorted.length===0?'<div class="empty">No entries</div>':sorted.map(e=>`
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
-        <div>
-          <div style="font-size:14px;font-weight:600;color:var(--text)">${cvt(e.weight)} ${unit}</div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:2px">${e.location||''}</div>
-        </div>
-        <div style="font-size:12px;color:var(--text-muted)">${fmtDateLong(e.date)}</div>
-      </div>`).join('');
-    container.innerHTML=`
-      <div class="archived-history">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-          <div class="archived-history-name">${d.name}</div>
-          <button class="archived-edit-btn" onclick="toggleArchivedEdit(${d.id})">Edit</button>
-        </div>
-        <div class="field-wrap"><p class="field-label">Breed</p><p class="field-val">${d.breed}</p></div>
-        <div class="field-wrap"><p class="field-label">Birthday</p><p class="field-val">${d.birthday?fmtDateLong(d.birthday)+(a?' ('+a+')':''):'—'}</p></div>
-        <div class="field-wrap"><p class="field-label">Ideal Weight</p><p class="field-val">${d.targetWeight?cvt(d.targetWeight)+' '+unit:'—'}</p></div>
-        <div class="field-wrap"><p class="field-label">Archived</p><p class="field-val">${d.archivedDate?fmtDateLong(d.archivedDate):'—'}</p></div>
-        <div class="field-wrap" style="margin-top:10px"><p class="field-label">${entries.length} Weight ${entries.length===1?'Entry':'Entries'}</p></div>
-        ${entriesHtml}
-        <div style="display:flex;gap:8px;margin-top:14px">
-          <button class="btn btn-glass" style="flex:1" onclick="restoreDog(${d.id})">Restore</button>
-          <button class="btn btn-danger" style="flex:1" onclick="confirmDeletePet(${d.id})">Delete</button>
-        </div>
-      </div>`;
-  }
-}
-
-function toggleArchivedHistory(id){
-  expandedArchivedId=expandedArchivedId===id?null:id;
-  archivedEditMode=null;
-  renderArchivedPets();
-}
-
-function toggleArchivedEdit(id){
-  if(archivedEditMode===id){
-    // Save
-    const d=state.dogs.find(x=>x.id===id); if(!d)return;
-    const breedSel=document.getElementById('ae-breed-'+id)?.value;
-    const breedOther=document.getElementById('ae-breed-other-'+id)?.value.trim();
-    d.name=document.getElementById('ae-name-'+id)?.value.trim()||d.name;
-    d.breed=breedSel==='Other'?(breedOther||'Other'):breedSel;
-    d.birthday=document.getElementById('ae-birthday-'+id)?.value||'';
-    const goalVal=parseFloat(document.getElementById('ae-goal-'+id)?.value);
-    d.targetWeight=goalVal?(unit==='kg'?goalVal/0.453592:goalVal):null;
-    d.archivedDate=document.getElementById('ae-archived-'+id)?.value||'';
-    archivedEditMode=null;
-    save();showToast('Archived profile saved!');renderArchivedPets();
-  } else {
-    archivedEditMode=id;
-    renderArchivedPets();
-  }
-}
-  editMode=!editMode;
-  document.getElementById('edit-btn').textContent=editMode?'Save':'Edit';
-  document.getElementById('profile-view').style.display=editMode?'none':'block';
-  document.getElementById('profile-edit').style.display=editMode?'block':'none';
-  const dog=activeDog();
-  if(editMode){
-    const knownBreeds=['Golden Retriever','Newfoundland'];
-    const isKnown=knownBreeds.includes(dog.breed);
-    document.getElementById('edit-breed').value=isKnown?dog.breed:'Other';
-    const otherField=document.getElementById('edit-breed-other');
-    if(!isKnown){otherField.style.display='block';otherField.value=dog.breed==='Other'?'':dog.breed;}
-    else{otherField.style.display='none';otherField.value='';}
-    document.getElementById('edit-name').value=dog.name;
-    document.getElementById('edit-birthday').value=dog.birthday||'';
-    document.getElementById('edit-goal').value=dog.targetWeight?cvt(dog.targetWeight):'';
-    document.getElementById('edit-location').value=dog.defaultLocation||'';
-    document.getElementById('edit-goal-label').textContent='Ideal Weight ('+unit+')';
-  } else {
-    const breedSel=document.getElementById('edit-breed').value;
-    const breedOther=document.getElementById('edit-breed-other').value.trim();
-    const goalVal=parseFloat(document.getElementById('edit-goal').value);
-    dog.name=document.getElementById('edit-name').value||dog.name;
-    dog.breed=breedSel==='Other'?(breedOther||'Other'):breedSel;
-    dog.birthday=document.getElementById('edit-birthday').value;
-    dog.targetWeight=goalVal?(unit==='kg'?goalVal/0.453592:goalVal):null;
-    dog.defaultLocation=document.getElementById('edit-location').value.trim();
-    save();showToast('Profile saved!');renderProfile();renderHome();
-  }
-}
-
-function archiveCurrentDog(){
-  const dog=activeDog(); if(!dog)return;
-  if(activeDogs().length<=1){showToast('Cannot archive the only pet');return;}
-  const dateStr=document.getElementById('archive-date-input')?.value||'';
-  dog.archived=true;
-  if(dateStr) dog.archivedDate=dateStr;
-  state.activeDogId=activeDogs()[0].id;
-  save();renderSwitcher();render();showToast(dog.name+' archived');
-}
-function restoreDog(id){
-  const dog=state.dogs.find(d=>d.id===id);
-  if(dog){dog.archived=false;expandedArchivedId=null;archivedEditMode=null;save();renderSwitcher();renderProfile();showToast(dog.name+' restored!');}
-}
-function confirmDeletePet(id){
-  const targetId=id!==undefined?id:state.activeDogId;
-  const dog=state.dogs.find(d=>d.id===targetId); if(!dog)return;
-  if(!dog.archived&&activeDogs().length<=1){showToast('Cannot delete the only pet — archive instead');return;}
-  document.getElementById('confirm-title').textContent='Delete '+dog.name+'?';
-  document.getElementById('confirm-sub').textContent='This will permanently delete '+dog.name+' and all '+dog.entries.length+' weight entries.\n\nThis cannot be undone.';
-  document.getElementById('confirm-ok').textContent='Delete Forever';
-  document.getElementById('confirm-ok').onclick=()=>{doDeletePet(targetId);closeConfirm();};
-  document.getElementById('confirm-overlay').classList.add('show');
-}
-function doDeletePet(id){
-  const dog=state.dogs.find(d=>d.id===id); const name=dog?dog.name:'Pet';
-  state.dogs=state.dogs.filter(d=>d.id!==id);
-  if(state.activeDogId===id){const rem=activeDogs();state.activeDogId=rem.length?rem[0].id:(state.dogs.length?state.dogs[0].id:-1);}
-  save();renderSwitcher();render();showToast(name+' deleted');
+  renderArchive();
 }
 
 function toggleEdit(){
@@ -1377,6 +1120,50 @@ function toggleEdit(){
   }
 }
 
+function renderArchive(){
+  const archived=archivedDogs();
+  const list=document.getElementById('archive-list');
+  if(archived.length===0){list.innerHTML='<div class="empty">No archived pets</div>';return;}
+  list.innerHTML=archived.map(d=>`
+    <div class="archive-item">
+      <div><div class="archive-name">${d.name}</div><div class="archive-meta">${d.breed} · ${d.entries.length} entries</div></div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="restore-btn" onclick="restoreDog(${d.id})">Restore</button>
+        <button style="background:var(--red-pale);color:var(--red);border:none;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer" onclick="confirmDeletePet(${d.id})">Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+function archiveCurrentDog(){
+  const dog=activeDog(); if(!dog)return;
+  if(activeDogs().length<=1){showToast('Cannot archive the only pet');return;}
+  const dateStr=document.getElementById('archive-date-input')?.value||'';
+  dog.archived=true;
+  if(dateStr) dog.archivedDate=dateStr;
+  state.activeDogId=activeDogs()[0].id;
+  save();renderSwitcher();render();showToast(dog.name+' archived');
+}
+function restoreDog(id){
+  const dog=state.dogs.find(d=>d.id===id);
+  if(dog){dog.archived=false;save();renderSwitcher();renderProfile();showToast(dog.name+' restored!');}
+}
+function confirmDeletePet(id){
+  const targetId=id!==undefined?id:state.activeDogId;
+  const dog=state.dogs.find(d=>d.id===targetId); if(!dog)return;
+  if(!dog.archived&&activeDogs().length<=1){showToast('Cannot delete the only pet — archive instead');return;}
+  document.getElementById('confirm-title').textContent='Delete '+dog.name+'?';
+  document.getElementById('confirm-sub').textContent='This will permanently delete '+dog.name+' and all '+dog.entries.length+' weight entries.\n\nThis cannot be undone.';
+  document.getElementById('confirm-ok').textContent='Delete Forever';
+  document.getElementById('confirm-ok').onclick=()=>{doDeletePet(targetId);closeConfirm();};
+  document.getElementById('confirm-overlay').classList.add('show');
+}
+function doDeletePet(id){
+  const dog=state.dogs.find(d=>d.id===id); const name=dog?dog.name:'Pet';
+  state.dogs=state.dogs.filter(d=>d.id!==id);
+  if(state.activeDogId===id){const rem=activeDogs();state.activeDogId=rem.length?rem[0].id:(state.dogs.length?state.dogs[0].id:-1);}
+  save();renderSwitcher();render();showToast(name+' deleted');
+}
+
 function toggleBreedOther(selectId,otherId){
   const sel=document.getElementById(selectId),other=document.getElementById(otherId);
   other.style.display=sel.value==='Other'?'block':'none';
@@ -1402,60 +1189,39 @@ function saveNewDog(){
 }
 
 function getGPS(targetId){
-  const btn=document.getElementById(targetId==='input-location'?'gps-btn':'ee-gps-btn');
+  const btn=targetId==='input-location'?document.getElementById('gps-btn'):null;
   if(btn)btn.textContent='⏳';
   if(!navigator.geolocation){showToast('GPS not available');if(btn)btn.textContent='📍';return;}
   navigator.geolocation.getCurrentPosition(
     pos=>{
       const{latitude:lat,longitude:lng}=pos.coords;
-      // Step 1: Query Overpass for nearest vet or pet shop within 100m
-      const overpassQuery=`[out:json][timeout:5];(node(around:100,${lat},${lng})[amenity=veterinary];node(around:100,${lat},${lng})[shop=pet];);out 1;`;
-      fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:'data='+encodeURIComponent(overpassQuery)})
-        .then(r=>r.json())
-        .then(data=>{
-          if(data.elements&&data.elements.length>0){
-            const el=data.elements[0];
-            const name=el.tags&&el.tags.name?el.tags.name:'Vet / Pet Shop';
-            document.getElementById(targetId).value=name;
-            if(btn)btn.textContent='📍';
-          } else {
-            // Step 2: Fall back to Nominatim for exact address
-            return fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`)
-              .then(r=>r.json()).then(data=>{
-                const a=data.address||{};
-                const houseNum=a.house_number||'';
-                const road=a.road||a.pedestrian||a.footway||'';
-                const street=houseNum&&road?houseNum+' '+road:road;
-                const city=a.city||a.town||a.village||a.suburb||a.neighbourhood||'';
-                const postcode=a.postcode||'';
-                const label=[street,city,postcode].filter(Boolean).join(', ')||`${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-                document.getElementById(targetId).value=label;
-                if(btn)btn.textContent='📍';
-              });
-          }
-        })
-        .catch(()=>{
-          // Overpass failed — go straight to Nominatim
-          fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`)
-            .then(r=>r.json()).then(data=>{
-              const a=data.address||{};
-              const houseNum=a.house_number||'';
-              const road=a.road||a.pedestrian||a.footway||'';
-              const street=houseNum&&road?houseNum+' '+road:road;
-              const city=a.city||a.town||a.village||a.suburb||a.neighbourhood||'';
-              const postcode=a.postcode||'';
-              const label=[street,city,postcode].filter(Boolean).join(', ')||`${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-              document.getElementById(targetId).value=label;
-              if(btn)btn.textContent='📍';
-            }).catch(()=>{
-              document.getElementById(targetId).value=`${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-              if(btn)btn.textContent='📍';
-            });
+      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`)
+        .then(r=>r.json()).then(data=>{
+          const a=data.address||{};
+          // Priority 1: named business/venue
+          const business=a.amenity||a.tourism||a.shop||a.office||a.clinic||a.veterinary||'';
+          // Priority 2: building name
+          const building=a.building||a.house_name||'';
+          // Priority 3: street address
+          const houseNum=a.house_number||'';
+          const road=a.road||a.pedestrian||a.footway||'';
+          const street=houseNum&&road?houseNum+' '+road:road;
+          // Locality
+          const city=a.city||a.town||a.village||a.suburb||a.neighbourhood||'';
+          // Build label — business > building > street, always include city
+          let place=business||building||street;
+          const label=[place,city].filter(Boolean).join(', ')||`${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+          document.getElementById(targetId).value=label;
+          if(btn)btn.textContent='📍';
+        }).catch(()=>{
+          document.getElementById(targetId).value=`${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+          if(btn)btn.textContent='📍';
         });
     },
     ()=>{showToast('Could not get location');if(btn)btn.textContent='📍';},{timeout:8000}
   );
 }
+function tryAutoGPS(){const loc=document.getElementById('input-location');if(!loc.value&&navigator.geolocation)getGPS('input-location');}
 
 // ── AUTH FUNCTIONS ──
 let _authMode = 'login';
@@ -1488,20 +1254,6 @@ document.getElementById('input-date').value=new Date().toISOString().split('T')[
 ['confirm-overlay','editentry-overlay','adddog-overlay'].forEach(id=>{
   document.getElementById(id).addEventListener('click',e=>{if(e.target===e.currentTarget)document.getElementById(id).classList.remove('show');});
 });
-
-// Banner shrink on scroll — attach to all three scroll areas
-(function(){
-  const banner = document.querySelector('.header-banner');
-  function onScroll(e) {
-    const scrolled = (e.target.scrollTop || 0) > 30;
-    banner.classList.toggle('scrolled', scrolled);
-  }
-  ['screen-home','screen-log','screen-profile'].forEach(id=>{
-    const el = document.getElementById(id);
-    if(el) el.addEventListener('scroll', onScroll, {passive:true});
-  });
-})();
-
 render();
 </script>
 </div><!-- end app-root -->
