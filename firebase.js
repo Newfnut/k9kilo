@@ -101,4 +101,3 @@ onAuthStateChanged(auth, (user) => {
     document.getElementById('auth-user-bar').style.display = 'none';
   }
 });
-</script>
