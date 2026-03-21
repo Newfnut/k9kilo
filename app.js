@@ -236,9 +236,6 @@ function renderChart(s, target) {
     const top=(dotY*scaleY)+(svgRect.top-wrapRect.top);
     tooltip.style.display='block';
     tooltip.style.top=top+'px';
-    // First dot: left-align tooltip to avoid left-crop
-    // Last dot: right-align tooltip to avoid right-crop
-    // All others: center under dot (default transform)
     const isFirst = i === 0;
     const isLast  = i === chartData.length - 1;
     if (isFirst) {
@@ -602,10 +599,17 @@ function authSubmit() {
   const errEl = document.getElementById('auth-error');
   errEl.textContent = '';
   if (!email || !password) { errEl.textContent = 'Please enter email and password.'; return; }
+  // Guard: Firebase not ready yet
+  if (!window._fbFns || !window._fbAuth) {
+    errEl.textContent = 'App is still loading — please try again in a moment.';
+    return;
+  }
   const fn = _authMode === 'login' ? window._fbFns.signInWithEmailAndPassword : window._fbFns.createUserWithEmailAndPassword;
   fn(window._fbAuth, email, password).catch(e => { errEl.textContent = _authError(e.code); });
 }
-function authSignOut() { window._fbFns.signOut(window._fbAuth); }
+function authSignOut() {
+  if (window._fbFns && window._fbAuth) window._fbFns.signOut(window._fbAuth);
+}
 function _authError(code) {
   return ({'auth/user-not-found':'No account with that email.','auth/wrong-password':'Incorrect password.',
     'auth/email-already-in-use':'Email already registered.','auth/weak-password':'Password must be 6+ characters.',
@@ -613,9 +617,12 @@ function _authError(code) {
     'auth/too-many-requests':'Too many attempts. Try again later.'})[code] || 'An error occurred.';
 }
 
-// Init
-document.getElementById('input-date').value=new Date().toISOString().split('T')[0];
-['confirm-overlay','editentry-overlay','adddog-overlay'].forEach(id=>{
-  document.getElementById(id).addEventListener('click',e=>{if(e.target===e.currentTarget)document.getElementById(id).classList.remove('show');});
+// Init — wrapped in DOMContentLoaded to be safe with defer
+document.addEventListener('DOMContentLoaded', function() {
+  const dateInput = document.getElementById('input-date');
+  if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+  ['confirm-overlay','editentry-overlay','adddog-overlay'].forEach(id=>{
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('click',e=>{if(e.target===e.currentTarget)el.classList.remove('show');});
+  });
 });
-render();
