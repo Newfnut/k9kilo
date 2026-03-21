@@ -547,9 +547,9 @@
   </div>
   <!-- TAB BAR — inside header, above pet name -->
   <div class="tab-bar">
-    <button class="tab active" id="tab-home" onclick="switchTab('home')"><span class="tab-icon">📊</span>Summary</button>
-    <button class="tab" id="tab-log" onclick="switchTab('log')"><span class="tab-icon">✏️</span>Records</button>
-    <button class="tab" id="tab-profile" onclick="switchTab('profile')"><span class="tab-icon">🐕</span>Settings</button>
+    <button class="tab active" id="tab-home" onclick="switchTab('home')"><span class="tab-icon">📊</span>Dashboard</button>
+    <button class="tab" id="tab-log" onclick="switchTab('log')"><span class="tab-icon">✏️</span>Log</button>
+    <button class="tab" id="tab-profile" onclick="switchTab('profile')"><span class="tab-icon">🐕</span>Profile</button>
   </div>
   <div class="header-bar">
     <div class="header-petname" id="header-sub">Loading...</div>
@@ -650,7 +650,7 @@
   </div>
   <div class="card">
     <div class="profile-header">
-      <div class="card-title" style="margin:0">Pet Profile</div>
+      <div class="card-title" style="margin:0">Pet Info</div>
       <button class="edit-btn" id="edit-btn" onclick="toggleEdit()">Edit</button>
     </div>
     <div id="profile-view"></div>
@@ -671,24 +671,24 @@
       </div>
       <div class="field-wrap"><p class="field-label">Default Location / Scale</p><input type="text" id="edit-location" placeholder="e.g. Vet office"></div>
       <div class="field-wrap" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--separator)">
-        <p class="field-label">Archive Date <span style="color:var(--text-muted);font-weight:400">(optional — stops age at this date)</span></p>
+        <p class="field-label">Date They Left <span style="color:var(--text-muted);font-weight:400">(optional — stops age at this date)</span></p>
         <input type="date" id="archive-date-input">
       </div>
-      <button class="btn btn-glass" style="margin-top:8px" onclick="archiveCurrentDog()">Archive This Pet</button>
+      <button class="btn btn-glass" style="margin-top:8px" onclick="archiveCurrentDog()">Move to Remembered</button>
     </div>
   </div>
 
   <div class="card">
     <div class="profile-header">
-      <div class="card-title" style="margin:0">Add Another Pet</div>
+      <div class="card-title" style="margin:0">Add a Pet</div>
     </div>
     <button class="btn btn-subtle" onclick="addNewDog()">+ Add Pet</button>
   </div>
 
   <div class="card">
-    <div class="card-title">Archive</div>
-    <div id="archive-list"><div class="empty">No archived pets</div></div>
-    <p style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.5">Archive pets that have passed — they stay accessible but won't appear on the main screen.</p>
+    <div class="card-title">Remembered</div>
+    <div id="archive-list"><div class="empty">No remembered pets</div></div>
+    <p style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.5">Pets no longer with you — passed away or rehomed. Their records stay safe here.</p>
   </div>
 
   <div style="padding: 0 14px; display:flex; flex-direction:column; gap:8px;">
@@ -1156,7 +1156,7 @@ function toggleEdit(){
 function renderArchive(){
   const archived=archivedDogs();
   const list=document.getElementById('archive-list');
-  if(archived.length===0){list.innerHTML='<div class="empty">No archived pets</div>';return;}
+  if(archived.length===0){list.innerHTML='<div class="empty">No remembered pets</div>';return;}
   list.innerHTML=archived.map(d=>`
     <div class="archive-item">
       <div><div class="archive-name">${d.name}</div><div class="archive-meta">${d.breed} · ${d.entries.length} entries</div></div>
@@ -1174,7 +1174,7 @@ function archiveCurrentDog(){
   dog.archived=true;
   if(dateStr) dog.archivedDate=dateStr;
   state.activeDogId=activeDogs()[0].id;
-  save();renderSwitcher();render();showToast(dog.name+' archived');
+  save();renderSwitcher();render();showToast(dog.name+' moved to Remembered');
 }
 function restoreDog(id){
   const dog=state.dogs.find(d=>d.id===id);
@@ -1183,7 +1183,7 @@ function restoreDog(id){
 function confirmDeletePet(id){
   const targetId=id!==undefined?id:state.activeDogId;
   const dog=state.dogs.find(d=>d.id===targetId); if(!dog)return;
-  if(!dog.archived&&activeDogs().length<=1){showToast('Cannot delete the only pet — archive instead');return;}
+
   document.getElementById('confirm-title').textContent='Delete '+dog.name+'?';
   document.getElementById('confirm-sub').textContent='This will permanently delete '+dog.name+' and all '+dog.entries.length+' weight entries.\n\nThis cannot be undone.';
   document.getElementById('confirm-ok').textContent='Delete Forever';
