@@ -88,9 +88,8 @@
     object-fit: cover;
     object-position: center 40%;
     display: block;
-    mix-blend-mode: multiply;
-    filter: invert(1) brightness(0.55) contrast(1.2);
-    opacity: 0.85;
+    filter: grayscale(0.2) brightness(0.82) contrast(1.1);
+    opacity: 0.9;
   }
   /* Gradient overlays to blend into black */
   .header-banner::before {
