@@ -1,10 +1,10 @@
 const STORAGE_KEY = 'k9kilo_v1';
 
 function defaultState() {
-  return { activeDogId: null, dogs: [] };
+  return { activeDogId: null, dogs: [], expenses: [] };
 }
 
-function load() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultState(); } catch(e) { return defaultState(); } }
+function load() { try { const s=JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultState(); if(!s.expenses) s.expenses=[]; return s; } catch(e) { return defaultState(); } }
 function save() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
   if (window._currentUser && window._fbSave) window._fbSave(state);
@@ -12,7 +12,7 @@ function save() {
 window._onLogin = function(user) {
   if (window._fbLoad) {
     window._fbLoad(user.uid).then(cloudState => {
-      if (cloudState) { state = cloudState; nextId = state.dogs.length ? Math.max(...state.dogs.map(d=>d.id))+1 : 1; }
+      if (cloudState) { if(!cloudState.expenses) cloudState.expenses=[]; state = cloudState; nextId = state.dogs.length ? Math.max(...state.dogs.map(d=>d.id))+1 : 1; }
       render();
     });
   } else { render(); }
@@ -26,6 +26,10 @@ let pendingDelete = null;
 let editEntryIdx = null;
 let nextId = state.dogs.length ? Math.max(...state.dogs.map(d=>d.id)) + 1 : 1;
 
+// Expense state
+let expenseEditId = null;
+let expenseViewMonth = null; // null = current month
+
 function activeDog() { return state.dogs.find(d => d.id === state.activeDogId); }
 function activeDogs() { return state.dogs.filter(d => !d.archived); }
 function archivedDogs() { return state.dogs.filter(d => d.archived); }
@@ -34,6 +38,7 @@ function sorted(dog) { return [...(dog||activeDog()).entries].sort((a,b)=>new Da
 function cvt(lbs) { return unit==='kg' ? (lbs*0.453592).toFixed(1) : parseFloat(lbs).toFixed(1); }
 function fmtDate(d) { return new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
 function fmtDateLong(d) { return new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}); }
+function fmtMoney(n) { return '$'+parseFloat(n).toFixed(2); }
 
 function dogAge(birthday, atDate, dog) {
   if (!birthday) return null;
@@ -60,7 +65,6 @@ function setUnit(u) {
   render();
 }
 
-// Always update the header subtitle from the current activeDog
 function updateHeaderSub() {
   const dog=activeDog();
   if(!dog){ document.getElementById('header-sub').textContent=''; return; }
@@ -69,7 +73,6 @@ function updateHeaderSub() {
 }
 
 function switchTab(tab) {
-  // If currently in edit mode on profile, cancel it before switching
   if(editMode && currentTab==='profile') {
     editMode=false;
     document.getElementById('edit-btn').textContent='Edit';
@@ -77,7 +80,7 @@ function switchTab(tab) {
     document.getElementById('profile-edit').style.display='none';
   }
   currentTab=tab;
-  ['home','log','profile'].forEach(t=>{
+  ['home','log','expenses','profile'].forEach(t=>{
     document.getElementById('screen-'+t).style.display=t===tab?'block':'none';
     document.getElementById('tab-'+t).classList.toggle('active',t===tab);
   });
@@ -88,6 +91,7 @@ function render() {
   updateHeaderSub();
   if(currentTab==='home') renderHome();
   if(currentTab==='log') renderLog();
+  if(currentTab==='expenses') renderExpenses();
   if(currentTab==='profile') renderProfile();
 }
 
@@ -103,7 +107,6 @@ function renderSwitcher() {
 }
 
 function selectDog(id){
-  // If in edit mode, cancel it before switching dog
   if(editMode) {
     editMode=false;
     document.getElementById('edit-btn').textContent='Edit';
@@ -275,7 +278,6 @@ function renderChart(s, target) {
   });
 }
 
-// Separated history rendering so it can be called from both home and log tabs
 function renderHistoryList(dog) {
   const s=sorted(dog).reverse();
   const list=document.getElementById('history-list');
@@ -331,7 +333,6 @@ function addEntry() {
   const dog=activeDog();
   dog.entries.push({date:d,weight:parseFloat(wLbs.toFixed(1)),location:document.getElementById('input-location').value.trim(),notes:document.getElementById('input-notes').value.trim()});
   save();
-  // Clear input fields after save
   document.getElementById('input-weight').value='';
   document.getElementById('input-notes').value='';
   document.getElementById('input-location').value='';
@@ -396,12 +397,10 @@ function toggleEdit(){
   document.getElementById('profile-view').style.display=editMode?'none':'block';
   document.getElementById('profile-edit').style.display=editMode?'block':'none';
 
-  // Always read from the CURRENT activeDog
   const dog=activeDog();
   if(!dog) return;
 
   if(editMode){
-    // Populate fields from the currently active dog
     const knownBreeds=['Golden Retriever','Newfoundland'];
     const isKnown=knownBreeds.includes(dog.breed);
     document.getElementById('edit-breed').value=isKnown?dog.breed:'Other';
@@ -413,10 +412,8 @@ function toggleEdit(){
     document.getElementById('edit-goal').value=dog.targetWeight?cvt(dog.targetWeight):'';
     document.getElementById('edit-location').value=dog.defaultLocation||'';
     document.getElementById('edit-goal-label').textContent='Ideal Weight ('+unit+')';
-    // Clear the archive date input
     document.getElementById('archive-date-input').value='';
   } else {
-    // Save to the currently active dog
     const breedSel=document.getElementById('edit-breed').value;
     const breedOther=document.getElementById('edit-breed-other').value.trim();
     const goalVal=parseFloat(document.getElementById('edit-goal').value);
@@ -426,10 +423,7 @@ function toggleEdit(){
     dog.targetWeight=goalVal?(unit==='kg'?goalVal/0.453592:goalVal):null;
     dog.defaultLocation=document.getElementById('edit-location').value.trim();
     save();
-
-    // Clear all edit fields to avoid stale data showing
     clearEditFields();
-
     showToast('Profile saved!');
     renderProfile();
     renderHome();
@@ -467,18 +461,13 @@ function archiveCurrentDog(){
   const dateStr=document.getElementById('archive-date-input')?.value||'';
   dog.archived=true;
   if(dateStr) dog.archivedDate=dateStr;
-
-  // Switch to another active dog
   const remaining=activeDogs().filter(d=>d.id!==dog.id);
   state.activeDogId=remaining.length?remaining[0].id:state.dogs.find(d=>d.id!==dog.id)?.id;
-
-  // Cancel edit mode
   editMode=false;
   document.getElementById('edit-btn').textContent='Edit';
   document.getElementById('profile-view').style.display='block';
   document.getElementById('profile-edit').style.display='none';
   clearEditFields();
-
   save();renderSwitcher();render();showToast(dog.name+' moved to Remembered');
 }
 
@@ -490,7 +479,6 @@ function restoreDog(id){
 function confirmDeletePet(id){
   const targetId=id!==undefined?id:state.activeDogId;
   const dog=state.dogs.find(d=>d.id===targetId); if(!dog)return;
-
   document.getElementById('confirm-title').textContent='Delete '+dog.name+'?';
   document.getElementById('confirm-sub').textContent='This will permanently delete '+dog.name+' and all '+dog.entries.length+' weight entries.\n\nThis cannot be undone.';
   document.getElementById('confirm-ok').textContent='Delete Forever';
@@ -503,8 +491,6 @@ function doDeletePet(id){
   const dogName=dog?dog.name:null;
   state.dogs=state.dogs.filter(d=>d.id!==id);
   if(state.activeDogId===id){const rem=activeDogs();state.activeDogId=rem.length?rem[0].id:(state.dogs.length?state.dogs[0].id:-1);}
-
-  // Cancel edit mode if we just deleted the dog being edited
   if(editMode) {
     editMode=false;
     document.getElementById('edit-btn').textContent='Edit';
@@ -512,7 +498,6 @@ function doDeletePet(id){
     document.getElementById('profile-edit').style.display='none';
     clearEditFields();
   }
-
   save();
   if(dogName && window._fbDeleteDog) window._fbDeleteDog(dogName);
   renderSwitcher();render();showToast(name+' deleted');
@@ -584,6 +569,328 @@ function getGPS(targetId) {
 
 function tryAutoGPS(){const loc=document.getElementById('input-location');if(!loc.value&&navigator.geolocation)getGPS('input-location');}
 
+// ══════════════════════════════════════════════
+//  EXPENSES
+// ══════════════════════════════════════════════
+
+const EXP_CATEGORIES = ['Vet Visit', 'Food & Treats', 'Medication', 'Supplements'];
+const EXP_ICONS = { 'Vet Visit': '🏥', 'Food & Treats': '🍖', 'Medication': '💊', 'Supplements': '🌿' };
+
+// Calculates each dog's share of an expense.
+// splitDogIds = array of dog ids to split across (used for Food, Supplements, and shared Vet/Meds)
+// dogId = single dog id (used when not split)
+function expenseEffectiveAmountForDog(exp, dogId) {
+  if (exp.splitDogIds && exp.splitDogIds.length > 0) {
+    if (exp.splitDogIds.includes(dogId)) return exp.amount / exp.splitDogIds.length;
+    return 0;
+  }
+  if (exp.shared) {
+    // Legacy fallback: shared across all active dogs
+    const numActive = activeDogs().length || 1;
+    return exp.amount / numActive;
+  }
+  if (exp.dogId === dogId) return exp.amount;
+  return 0;
+}
+
+function getViewMonthKey() {
+  if (expenseViewMonth) return expenseViewMonth;
+  const now = new Date();
+  return now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+}
+
+function expensesForMonth(monthKey) {
+  return (state.expenses || []).filter(e => e.date && e.date.startsWith(monthKey));
+}
+
+function prevExpenseMonth() {
+  const [y,m] = getViewMonthKey().split('-').map(Number);
+  const d = new Date(y, m-2, 1);
+  expenseViewMonth = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  renderExpenses();
+}
+function nextExpenseMonth() {
+  const [y,m] = getViewMonthKey().split('-').map(Number);
+  const d = new Date(y, m, 1);
+  const now = new Date();
+  const nowKey = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  const newKey = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  if (newKey > nowKey) return;
+  expenseViewMonth = newKey;
+  renderExpenses();
+}
+
+function renderExpenses() {
+  const monthKey = getViewMonthKey();
+  const [y,m] = monthKey.split('-').map(Number);
+  const monthLabel = new Date(y, m-1, 1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  document.getElementById('exp-month-label').textContent = monthLabel;
+
+  // Nav arrows
+  const now = new Date();
+  const nowKey = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  document.getElementById('exp-next-btn').style.opacity = monthKey >= nowKey ? '0.3' : '1';
+  document.getElementById('exp-next-btn').style.pointerEvents = monthKey >= nowKey ? 'none' : 'auto';
+
+  const dogs = activeDogs();
+  const monthExps = expensesForMonth(monthKey);
+
+  // ── Summary cards (per dog)
+  const summaryEl = document.getElementById('exp-summary');
+  if (dogs.length === 0) {
+    summaryEl.innerHTML = '<div class="empty">No pets added yet</div>';
+  } else {
+    summaryEl.innerHTML = dogs.map(dog => {
+      const total = monthExps.reduce((sum, e) => sum + expenseEffectiveAmountForDog(e, dog.id), 0);
+      const vetTotal = monthExps.filter(e=>e.category==='Vet Visit').reduce((sum,e)=>sum+expenseEffectiveAmountForDog(e,dog.id),0);
+      const foodTotal = monthExps.filter(e=>e.category==='Food & Treats').reduce((sum,e)=>sum+expenseEffectiveAmountForDog(e,dog.id),0);
+      const medTotal = monthExps.filter(e=>e.category==='Medication').reduce((sum,e)=>sum+expenseEffectiveAmountForDog(e,dog.id),0);
+      const supTotal = monthExps.filter(e=>e.category==='Supplements').reduce((sum,e)=>sum+expenseEffectiveAmountForDog(e,dog.id),0);
+      return `<div class="exp-dog-card">
+        <div class="exp-dog-name">${dog.name}</div>
+        <div class="exp-dog-total">${fmtMoney(total)}</div>
+        <div class="exp-dog-breakdown">
+          <span>${EXP_ICONS['Vet Visit']} ${fmtMoney(vetTotal)}</span>
+          <span>${EXP_ICONS['Food & Treats']} ${fmtMoney(foodTotal)}</span>
+          <span>${EXP_ICONS['Medication']} ${fmtMoney(medTotal)}</span>
+          <span>${EXP_ICONS['Supplements']} ${fmtMoney(supTotal)}</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Category breakdown totals
+  const catEl = document.getElementById('exp-cat-breakdown');
+  const grandTotal = monthExps.reduce((sum,e)=>sum+e.amount,0);
+  catEl.innerHTML = EXP_CATEGORIES.map(cat => {
+    const catTotal = monthExps.filter(e=>e.category===cat).reduce((sum,e)=>sum+e.amount,0);
+    const pct = grandTotal > 0 ? Math.round(catTotal/grandTotal*100) : 0;
+    return `<div class="exp-cat-row">
+      <span class="exp-cat-icon">${EXP_ICONS[cat]}</span>
+      <span class="exp-cat-name">${cat}</span>
+      <div class="exp-cat-bar-wrap"><div class="exp-cat-bar" style="width:${pct}%"></div></div>
+      <span class="exp-cat-amt">${fmtMoney(catTotal)}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('exp-grand-total').textContent = fmtMoney(grandTotal);
+
+  // ── Transaction list
+  const listEl = document.getElementById('exp-list');
+  const sorted = [...monthExps].sort((a,b)=>b.date.localeCompare(a.date));
+  if (sorted.length === 0) {
+    listEl.innerHTML = '<div class="empty">No expenses this month</div>';
+  } else {
+    listEl.innerHTML = sorted.map(e => {
+      let dogLabel = '';
+      if (e.splitDogIds && e.splitDogIds.length > 0) {
+        const names = e.splitDogIds.map(id => { const d = state.dogs.find(x=>x.id===id); return d ? d.name : '?'; });
+        const allActive = activeDogs().every(d => e.splitDogIds.includes(d.id)) && e.splitDogIds.length === activeDogs().length;
+        if (allActive) {
+          dogLabel = `<span class="exp-tag exp-tag-shared">All ÷${e.splitDogIds.length}</span>`;
+        } else {
+          dogLabel = names.map(n=>`<span class="exp-tag exp-tag-shared">${n}</span>`).join('');
+        }
+      } else if (e.shared) {
+        dogLabel = `<span class="exp-tag exp-tag-shared">Shared ÷${dogs.length}</span>`;
+      } else {
+        const dog = state.dogs.find(d=>d.id===e.dogId);
+        dogLabel = dog ? `<span class="exp-tag">${dog.name}</span>` : '';
+      }
+      return `<div class="exp-item">
+        <div class="exp-item-icon">${EXP_ICONS[e.category]||'💰'}</div>
+        <div style="flex:1;min-width:0">
+          <div class="exp-item-cat">${e.category} ${dogLabel}</div>
+          <div class="exp-item-meta">${fmtDate(e.date)}${e.notes?' · '+e.notes:''}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+          <div class="exp-item-amt">${fmtMoney(e.amount)}</div>
+          <button style="background:none;border:none;color:rgba(232,98,26,0.6);font-size:15px;cursor:pointer;padding:4px 6px;border-radius:8px" onclick="openEditExpense('${e.id}')">✏️</button>
+          <button class="delete-btn" onclick="deleteExpense('${e.id}')">×</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+}
+
+function openAddExpense() {
+  expenseEditId = null;
+  document.getElementById('exp-overlay-title').textContent = 'Add Expense';
+  document.getElementById('exp-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('exp-amount').value = '';
+  document.getElementById('exp-notes').value = '';
+  document.getElementById('exp-category').value = EXP_CATEGORIES[0];
+  updateExpenseDogField();
+  document.getElementById('expense-overlay').classList.add('show');
+}
+
+function openEditExpense(id) {
+  const exp = (state.expenses||[]).find(e=>e.id===id);
+  if (!exp) return;
+  expenseEditId = id;
+  document.getElementById('exp-overlay-title').textContent = 'Edit Expense';
+  document.getElementById('exp-date').value = exp.date;
+  document.getElementById('exp-amount').value = exp.amount.toFixed(2);
+  document.getElementById('exp-notes').value = exp.notes||'';
+  document.getElementById('exp-category').value = exp.category;
+  updateExpenseDogField();
+  setTimeout(()=>{
+    const isSplitCat = ['Food & Treats','Supplements'].includes(exp.category);
+    if (isSplitCat) {
+      // Restore checked state of split dog checkboxes
+      const preChecked = exp.splitDogIds || activeDogs().map(d=>d.id);
+      document.querySelectorAll('.exp-split-check').forEach(cb => {
+        cb.checked = preChecked.includes(parseInt(cb.value));
+      });
+    } else {
+      document.getElementById('exp-shared').checked = !!(exp.shared || (exp.splitDogIds && exp.splitDogIds.length > 1));
+      toggleExpenseShared();
+      if (!document.getElementById('exp-shared').checked && exp.dogId !== undefined) {
+        document.getElementById('exp-dog-select').value = exp.dogId;
+      } else if (exp.splitDogIds && exp.splitDogIds.length > 0) {
+        // Was a split, restore as shared + check all
+        document.getElementById('exp-shared').checked = true;
+        toggleExpenseShared();
+      }
+    }
+  }, 0);
+  document.getElementById('expense-overlay').classList.add('show');
+}
+
+function closeExpenseOverlay() {
+  document.getElementById('expense-overlay').classList.remove('show');
+  expenseEditId = null;
+}
+
+// Categories that always use a dog checkbox picker
+function isSplitCategory(cat) {
+  return cat === 'Food & Treats' || cat === 'Supplements';
+}
+
+function updateExpenseDogField() {
+  const cat = document.getElementById('exp-category').value;
+  const splitRow = document.getElementById('exp-split-row');
+  const sharedRow = document.getElementById('exp-shared-row');
+  const dogRow = document.getElementById('exp-dog-row');
+  const dogs = activeDogs();
+
+  if (isSplitCategory(cat)) {
+    // Show dog checkbox picker, hide single-dog fields
+    splitRow.style.display = 'block';
+    sharedRow.style.display = 'none';
+    dogRow.style.display = 'none';
+    // Build checkboxes, all checked by default
+    splitRow.querySelector('#exp-split-dogs').innerHTML = dogs.map(d =>
+      `<label class="exp-split-label">
+        <input type="checkbox" class="exp-split-check" value="${d.id}" checked style="accent-color:var(--orange);width:auto">
+        ${d.name}
+      </label>`
+    ).join('');
+  } else {
+    // Vet / Medication: shared toggle + single dog select
+    splitRow.style.display = 'none';
+    sharedRow.style.display = 'flex';
+    toggleExpenseShared();
+    // Populate single dog select
+    const sel = document.getElementById('exp-dog-select');
+    sel.innerHTML = dogs.map(d=>`<option value="${d.id}">${d.name}</option>`).join('');
+    if (state.activeDogId !== null) sel.value = state.activeDogId;
+  }
+}
+
+function toggleExpenseShared() {
+  const shared = document.getElementById('exp-shared').checked;
+  const cat = document.getElementById('exp-category').value;
+  const dogRow = document.getElementById('exp-dog-row');
+  if (isSplitCategory(cat)) { dogRow.style.display='none'; return; }
+  dogRow.style.display = shared ? 'none' : 'block';
+}
+
+function saveExpense() {
+  const amount = parseFloat(document.getElementById('exp-amount').value);
+  const date = document.getElementById('exp-date').value;
+  const category = document.getElementById('exp-category').value;
+  const notes = document.getElementById('exp-notes').value.trim();
+  if (!amount || amount <= 0 || !date) { showToast('Please enter amount and date'); return; }
+
+  let splitDogIds = null;
+  let shared = false;
+  let dogId = null;
+
+  if (isSplitCategory(category)) {
+    // Collect checked dog ids
+    const checked = [...document.querySelectorAll('.exp-split-check:checked')].map(cb=>parseInt(cb.value));
+    if (checked.length === 0) { showToast('Select at least one dog'); return; }
+    splitDogIds = checked;
+  } else {
+    shared = document.getElementById('exp-shared').checked;
+    if (shared) {
+      splitDogIds = activeDogs().map(d=>d.id);
+    } else {
+      dogId = parseInt(document.getElementById('exp-dog-select').value);
+    }
+  }
+
+  if (!state.expenses) state.expenses = [];
+
+  if (expenseEditId) {
+    const idx = state.expenses.findIndex(e=>e.id===expenseEditId);
+    if (idx !== -1) {
+      state.expenses[idx] = { ...state.expenses[idx], amount, date, category, notes, splitDogIds, shared, dogId };
+    }
+    showToast('Expense updated ✓');
+  } else {
+    const id = 'exp_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+    state.expenses.push({ id, amount, date, category, notes, splitDogIds, shared, dogId });
+    showToast('Expense saved! 💰');
+  }
+  save();
+  closeExpenseOverlay();
+  renderExpenses();
+}
+
+function deleteExpense(id) {
+  state.expenses = (state.expenses||[]).filter(e=>e.id!==id);
+  save();
+  renderExpenses();
+  showToast('Expense deleted');
+}
+
+function exportExpensesCSV() {
+  const dogs = activeDogs();
+  const expenses = state.expenses || [];
+  if (expenses.length === 0) { showToast('No expenses to export'); return; }
+
+  const rows = [['Date','Category','Amount','Per Dog Share','Dog / Allocation','Notes']];
+  const sorted = [...expenses].sort((a,b)=>a.date.localeCompare(b.date));
+  sorted.forEach(e => {
+    let alloc = '';
+    let perDogShare = '';
+    if (e.splitDogIds && e.splitDogIds.length > 0) {
+      const names = e.splitDogIds.map(id => { const d = state.dogs.find(x=>x.id===id); return d?d.name:'?'; });
+      alloc = names.join(', ');
+      perDogShare = (e.amount / e.splitDogIds.length).toFixed(2);
+    } else if (e.shared) {
+      alloc = 'Shared all dogs';
+      perDogShare = (e.amount / (dogs.length||1)).toFixed(2);
+    } else {
+      const dog = state.dogs.find(d=>d.id===e.dogId);
+      alloc = dog ? dog.name : 'Unknown';
+      perDogShare = e.amount.toFixed(2);
+    }
+    rows.push([e.date, e.category, e.amount.toFixed(2), perDogShare, alloc, e.notes||'']);
+  });
+
+  const csv = rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'k9kilo-expenses.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV downloaded!');
+}
+
 // ── AUTH FUNCTIONS ──
 let _authMode = 'login';
 function authSwitchTab(mode) {
@@ -599,17 +906,10 @@ function authSubmit() {
   const errEl = document.getElementById('auth-error');
   errEl.textContent = '';
   if (!email || !password) { errEl.textContent = 'Please enter email and password.'; return; }
-  // Guard: Firebase not ready yet
-  if (!window._fbFns || !window._fbAuth) {
-    errEl.textContent = 'App is still loading — please try again in a moment.';
-    return;
-  }
   const fn = _authMode === 'login' ? window._fbFns.signInWithEmailAndPassword : window._fbFns.createUserWithEmailAndPassword;
   fn(window._fbAuth, email, password).catch(e => { errEl.textContent = _authError(e.code); });
 }
-function authSignOut() {
-  if (window._fbFns && window._fbAuth) window._fbFns.signOut(window._fbAuth);
-}
+function authSignOut() { window._fbFns.signOut(window._fbAuth); }
 function _authError(code) {
   return ({'auth/user-not-found':'No account with that email.','auth/wrong-password':'Incorrect password.',
     'auth/email-already-in-use':'Email already registered.','auth/weak-password':'Password must be 6+ characters.',
@@ -617,12 +917,9 @@ function _authError(code) {
     'auth/too-many-requests':'Too many attempts. Try again later.'})[code] || 'An error occurred.';
 }
 
-// Init — wrapped in DOMContentLoaded to be safe with defer
-document.addEventListener('DOMContentLoaded', function() {
-  const dateInput = document.getElementById('input-date');
-  if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
-  ['confirm-overlay','editentry-overlay','adddog-overlay'].forEach(id=>{
-    const el = document.getElementById(id);
-    if (el) el.addEventListener('click',e=>{if(e.target===e.currentTarget)el.classList.remove('show');});
-  });
+// Init
+document.getElementById('input-date').value=new Date().toISOString().split('T')[0];
+['confirm-overlay','editentry-overlay','adddog-overlay','expense-overlay'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',e=>{if(e.target===e.currentTarget)document.getElementById(id).classList.remove('show');});
 });
+render();

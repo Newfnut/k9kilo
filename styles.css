@@ -88,8 +88,9 @@
     object-fit: cover;
     object-position: center 40%;
     display: block;
-    filter: grayscale(0.2) brightness(0.82) contrast(1.1);
-    opacity: 0.9;
+    mix-blend-mode: multiply;
+    filter: invert(1) brightness(0.55) contrast(1.2);
+    opacity: 0.85;
   }
   /* Gradient overlays to blend into black */
   .header-banner::before {
@@ -487,4 +488,83 @@
   .auth-signout-btn {
     font-size: 11px; color: var(--orange); background: none; border: none;
     font-family: inherit; font-weight: 700; cursor: pointer; padding: 2px 6px;
+  }
+
+  /* ══════════════════════════════════════════════
+     EXPENSES
+  ══════════════════════════════════════════════ */
+
+  /* Per-dog summary cards */
+  .exp-dog-card {
+    flex: 1; min-width: 80px;
+    background: var(--glass-strong);
+    border-radius: 14px; padding: 12px 10px;
+    text-align: center;
+    border: 1px solid var(--glass-border);
+  }
+  .exp-dog-name {
+    font-size: 11px; font-weight: 700; color: var(--text-soft);
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;
+  }
+  .exp-dog-total {
+    font-size: 20px; font-weight: 800; color: var(--orange);
+    letter-spacing: -0.5px; margin-bottom: 6px;
+  }
+  .exp-dog-breakdown {
+    display: flex; justify-content: center; gap: 6px;
+    font-size: 10px; color: var(--text-muted); flex-wrap: wrap;
+  }
+
+  /* Category breakdown bar rows */
+  .exp-cat-row {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  }
+  .exp-cat-row:last-child { margin-bottom: 0; }
+  .exp-cat-icon { font-size: 16px; flex-shrink: 0; }
+  .exp-cat-name { font-size: 13px; color: var(--text-soft); font-weight: 500; width: 90px; flex-shrink: 0; }
+  .exp-cat-bar-wrap {
+    flex: 1; height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden;
+  }
+  .exp-cat-bar {
+    height: 100%; background: var(--orange); border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+  .exp-cat-amt { font-size: 13px; font-weight: 700; color: var(--text); width: 52px; text-align: right; flex-shrink: 0; }
+
+  /* Transaction list items */
+  .exp-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 0; border-bottom: 1px solid var(--separator);
+  }
+  .exp-item:last-child { border-bottom: none; }
+  .exp-item-icon { font-size: 22px; flex-shrink: 0; }
+  .exp-item-cat { font-size: 14px; font-weight: 600; color: var(--text); }
+  .exp-item-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .exp-item-amt { font-size: 15px; font-weight: 700; color: var(--text); }
+
+  /* Tags on transaction rows */
+  .exp-tag {
+    display: inline-block; font-size: 10px; font-weight: 700;
+    background: var(--orange-pale); color: var(--orange);
+    border-radius: 6px; padding: 2px 6px; margin-left: 4px;
+    vertical-align: middle;
+  }
+  .exp-tag-shared {
+    background: rgba(52,199,89,0.12); color: #34C759;
+  }
+
+  /* Expense split dog checkbox labels */
+  .exp-split-label {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--text-soft); font-weight: 500;
+    cursor: pointer;
+    background: var(--glass-strong);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px; padding: 7px 12px;
+    transition: border-color 0.15s;
+  }
+  .exp-split-label:has(input:checked) {
+    border-color: var(--orange);
+    color: var(--text);
+    background: var(--orange-pale);
   }
