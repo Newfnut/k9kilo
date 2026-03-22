@@ -40,7 +40,13 @@ window._fbLoad = async function(uid) {
     dogs.sort((a, b) => a.name.localeCompare(b.name));
     // Re-assign sequential ids after sort
     dogs.forEach((d, i) => { d.id = i; });
-    return { activeDogId: dogs[0]?.id ?? null, dogs };
+
+    // FIX: never default to an archived dog — pick first active dog,
+    // only fall back to any dog if everything is archived
+    const nonArchived = dogs.filter(d => !d.archived);
+    const defaultDog = nonArchived.length ? nonArchived[0] : dogs[0];
+
+    return { activeDogId: defaultDog?.id ?? null, dogs };
   } catch(e) { console.warn('Firestore load failed:', e); return null; }
 };
 
