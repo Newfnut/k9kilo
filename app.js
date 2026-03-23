@@ -12,7 +12,12 @@ function save() {
 window._onLogin = function(user) {
   if (window._fbLoad) {
     window._fbLoad(user.uid).then(cloudState => {
-      if (cloudState) { if(!cloudState.expenses) cloudState.expenses=[]; state = cloudState; nextId = state.dogs.length ? Math.max(...state.dogs.map(d=>d.id))+1 : 1; }
+      if (cloudState) {
+        // If expenses is null, Firestore had no doc yet — keep whatever is local
+        if (cloudState.expenses === null) cloudState.expenses = state.expenses || [];
+        state = cloudState;
+        nextId = state.dogs.length ? Math.max(...state.dogs.map(d=>d.id))+1 : 1;
+      }
       render();
     });
   } else { render(); }

@@ -26,9 +26,6 @@ window._fbLoad = async function(uid) {
     const dogs = snap.docs.map((d) => {
       const data = d.data();
       return {
-        // CRITICAL: restore the original numeric id saved in Firestore.
-        // Expenses reference dogs by this id (dogId / splitDogIds).
-        // Never reassign sequential ids — that breaks expense associations.
         id: typeof data.id === 'number' ? data.id : null,
         name: data.name || d.id,
         breed: data.breed || '',
@@ -36,12 +33,11 @@ window._fbLoad = async function(uid) {
         targetWeight: data.targetWeight ?? null,
         defaultLocation: data.defaultLocation || '',
         archived: data.archived || false,
+        archivedDate: data.archivedDate || '',
         entries: data.entries || []
       };
     });
 
-    // Legacy fallback: if any dog is missing a saved id, assign based on
-    // alphabetical sort so this session at least stays internally consistent.
     const missingIds = dogs.some(d => d.id === null);
     if (missingIds) {
       dogs.sort((a, b) => a.name.localeCompare(b.name));
@@ -51,20 +47,24 @@ window._fbLoad = async function(uid) {
     const nonArchived = dogs.filter(d => !d.archived);
     const defaultDog = nonArchived.length ? nonArchived[0] : dogs[0];
 
-    // Load expenses
-    let expenses = [];
+    // expenses = null means the doc doesn't exist yet — caller preserves local
+    let expenses = null;
     try {
       const expSnap = await getDoc(doc(db, 'users', uid, 'meta', 'expenses'));
       if (expSnap.exists()) {
-        expenses = expSnap.data().list || [];
+        const data = expSnap.data();
+        expenses = Array.isArray(data.list) ? data.list : [];
       }
     } catch(e) {
-      console.warn('Firestore expenses load failed:', e);
+      console.warn('Firestore expenses load failed, keeping local:', e);
     }
 
     return { activeDogId: defaultDog?.id ?? null, dogs, expenses };
 
-  } catch(e) { console.warn('Firestore load failed:', e); return null; }
+  } catch(e) {
+    console.warn('Firestore load failed:', e);
+    return null;
+  }
 };
 
 window._fbSave = async function(state) {
@@ -81,13 +81,14 @@ window._fbSave = async function(state) {
     for (const dog of state.dogs) {
       const ref = doc(db, 'users', uid, 'dogs', dog.name);
       batch.set(ref, {
-        id: dog.id,                        // ← persist numeric id so expenses stay linked
+        id: dog.id,
         name: dog.name,
         breed: dog.breed || '',
         birthday: dog.birthday || '',
         targetWeight: dog.targetWeight ?? null,
         defaultLocation: dog.defaultLocation || '',
         archived: dog.archived || false,
+        archivedDate: dog.archivedDate || '',
         entries: dog.entries || []
       });
     }
@@ -98,12 +99,14 @@ window._fbSave = async function(state) {
       }
     }
 
-    // Expenses saved as a single doc array — user-level, not per-dog
+    // Always write expenses so other devices can load them
     const expRef = doc(db, 'users', uid, 'meta', 'expenses');
-    batch.set(expRef, { list: state.expenses || [] });
+    batch.set(expRef, { list: state.expenses || [], updatedAt: Date.now() });
 
     await batch.commit();
-  } catch(e) { console.warn('Firestore save failed:', e); }
+  } catch(e) {
+    console.warn('Firestore save failed:', e);
+  }
 };
 
 window._fbDeleteDog = async function(dogName) {
@@ -111,7 +114,9 @@ window._fbDeleteDog = async function(dogName) {
     const uid = window._currentUser?.uid;
     if (!uid) return;
     await deleteDoc(doc(db, 'users', uid, 'dogs', dogName));
-  } catch(e) { console.warn('Firestore delete failed:', e); }
+  } catch(e) {
+    console.warn('Firestore delete failed:', e);
+  }
 };
 
 onAuthStateChanged(auth, (user) => {
