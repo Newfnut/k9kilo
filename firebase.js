@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, doc, setDoc, getDoc, getDocs, writeBatch, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, doc, getDoc, getDocs, writeBatch, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB07OUcurYPUhX1pYUUyJE4B20kaoczkgY",
@@ -47,7 +47,7 @@ window._fbLoad = async function(uid) {
     const nonArchived = dogs.filter(d => !d.archived);
     const defaultDog = nonArchived.length ? nonArchived[0] : dogs[0];
 
-    // expenses = null means the doc doesn't exist yet — caller preserves local
+    // expenses = null means doc doesn't exist yet — caller preserves local
     let expenses = null;
     try {
       const expSnap = await getDoc(doc(db, 'users', uid, 'meta', 'expenses'));
@@ -99,7 +99,7 @@ window._fbSave = async function(state) {
       }
     }
 
-    // Always write expenses so other devices can load them
+    // Always write expenses so other devices can receive them via onSnapshot
     const expRef = doc(db, 'users', uid, 'meta', 'expenses');
     batch.set(expRef, { list: state.expenses || [], updatedAt: Date.now() });
 
@@ -119,6 +119,28 @@ window._fbDeleteDog = async function(dogName) {
   }
 };
 
+// Live listener — fires on any device save, costs 0 extra reads after connect
+let _unsubscribeListener = null;
+window._fbListen = function(uid) {
+  // Clean up any existing listener first (e.g. re-login)
+  if (_unsubscribeListener) { _unsubscribeListener(); _unsubscribeListener = null; }
+
+  const expRef = doc(db, 'users', uid, 'meta', 'expenses');
+  _unsubscribeListener = onSnapshot(expRef, (snap) => {
+    if (!snap.exists()) return;
+    const data = snap.data();
+    if (!Array.isArray(data.list)) return;
+    // Only update if data actually changed (avoid re-render on our own saves)
+    const incoming = JSON.stringify(data.list);
+    const current  = JSON.stringify(window._state ? window._state.expenses : []);
+    if (incoming === current) return;
+    if (window._state) window._state.expenses = data.list;
+    if (typeof render === 'function') render();
+  }, (err) => {
+    console.warn('Firestore snapshot error:', err);
+  });
+};
+
 onAuthStateChanged(auth, (user) => {
   window._currentUser = user || null;
   if (user) {
@@ -128,6 +150,8 @@ onAuthStateChanged(auth, (user) => {
     document.getElementById('auth-user-bar').style.display = 'flex';
     if (typeof window._onLogin === 'function') window._onLogin(user);
   } else {
+    // Clean up listener on sign-out
+    if (_unsubscribeListener) { _unsubscribeListener(); _unsubscribeListener = null; }
     document.getElementById('auth-overlay').style.display = 'flex';
     document.getElementById('app-root').style.display = 'none';
     document.getElementById('auth-user-bar').style.display = 'none';

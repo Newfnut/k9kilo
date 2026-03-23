@@ -12,7 +12,12 @@ function save() {
 window._onLogin = function(user) {
   if (window._fbLoad) {
     window._fbLoad(user.uid).then(cloudState => {
-      if (cloudState) { if(!cloudState.expenses) cloudState.expenses=[]; state = cloudState; nextId = state.dogs.length ? Math.max(...state.dogs.map(d=>d.id))+1 : 1; }
+      if (cloudState) {
+        // If expenses is null, Firestore had no doc yet — keep whatever is local
+        if (cloudState.expenses === null) cloudState.expenses = state.expenses || [];
+        state = cloudState;
+        nextId = state.dogs.length ? Math.max(...state.dogs.map(d=>d.id))+1 : 1;
+      }
       render();
     });
   } else { render(); }
@@ -307,7 +312,7 @@ function renderHistoryList(dog) {
         ${secondary?`<div class="history-meta-secondary" style="white-space:pre-line">${secondary}</div>`:''}
       </div>
       <div style="display:flex;align-items:center;gap:2px;flex-shrink:0">
-        <button class="icon-btn" onclick="openEditEntry(${realIdx})"><img src="editlogo.png" alt="Edit" class="action-logo"></button>
+        <button style="background:none;border:none;color:rgba(232,98,26,0.6);font-size:15px;cursor:pointer;padding:4px 6px;border-radius:8px" onclick="openEditEntry(${realIdx})">✏️</button>
         <button class="delete-btn" onclick="confirmDelete('${e.date}',${e.weight},'${(e.notes||'').replace(/'/g,"\\'")}')">×</button>
       </div>
     </div>`;
@@ -574,20 +579,18 @@ function tryAutoGPS(){const loc=document.getElementById('input-location');if(!lo
 // ══════════════════════════════════════════════
 
 const EXP_CATEGORIES = ['Vet Visit', 'Food & Treats', 'Medication', 'Supplements'];
-const EXP_ICONS = {
-  'Vet Visit':     '<img src="vetlogo.png" alt="Vet Visit" class="cat-logo">',
-  'Food & Treats': '<img src="meatlogo.png" alt="Food & Treats" class="cat-logo">',
-  'Medication':    '💊',
-  'Supplements':   '<img src="supplementslogo.png" alt="Supplements" class="cat-logo">'
-};
+const EXP_ICONS = { 'Vet Visit': '🏥', 'Food & Treats': '🍖', 'Medication': '💊', 'Supplements': '🌿' };
 
 // Calculates each dog's share of an expense.
+// splitDogIds = array of dog ids to split across (used for Food, Supplements, and shared Vet/Meds)
+// dogId = single dog id (used when not split)
 function expenseEffectiveAmountForDog(exp, dogId) {
   if (exp.splitDogIds && exp.splitDogIds.length > 0) {
     if (exp.splitDogIds.includes(dogId)) return exp.amount / exp.splitDogIds.length;
     return 0;
   }
   if (exp.shared) {
+    // Legacy fallback: shared across all active dogs
     const numActive = activeDogs().length || 1;
     return exp.amount / numActive;
   }
@@ -628,6 +631,7 @@ function renderExpenses() {
   const monthLabel = new Date(y, m-1, 1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
   document.getElementById('exp-month-label').textContent = monthLabel;
 
+  // Nav arrows
   const now = new Date();
   const nowKey = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
   document.getElementById('exp-next-btn').style.opacity = monthKey >= nowKey ? '0.3' : '1';
@@ -705,7 +709,7 @@ function renderExpenses() {
         </div>
         <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
           <div class="exp-item-amt">${fmtMoney(e.amount)}</div>
-          <button class="icon-btn" onclick="openEditExpense('${e.id}')"><img src="editlogo.png" alt="Edit" class="action-logo"></button>
+          <button style="background:none;border:none;color:rgba(232,98,26,0.6);font-size:15px;cursor:pointer;padding:4px 6px;border-radius:8px" onclick="openEditExpense('${e.id}')">✏️</button>
           <button class="delete-btn" onclick="deleteExpense('${e.id}')">×</button>
         </div>
       </div>`;
@@ -737,6 +741,7 @@ function openEditExpense(id) {
   setTimeout(()=>{
     const isSplitCat = ['Food & Treats','Supplements'].includes(exp.category);
     if (isSplitCat) {
+      // Restore checked state of split dog checkboxes
       const preChecked = exp.splitDogIds || activeDogs().map(d=>d.id);
       document.querySelectorAll('.exp-split-check').forEach(cb => {
         cb.checked = preChecked.includes(parseInt(cb.value));
@@ -747,6 +752,7 @@ function openEditExpense(id) {
       if (!document.getElementById('exp-shared').checked && exp.dogId !== undefined) {
         document.getElementById('exp-dog-select').value = exp.dogId;
       } else if (exp.splitDogIds && exp.splitDogIds.length > 0) {
+        // Was a split, restore as shared + check all
         document.getElementById('exp-shared').checked = true;
         toggleExpenseShared();
       }
@@ -760,6 +766,7 @@ function closeExpenseOverlay() {
   expenseEditId = null;
 }
 
+// Categories that always use a dog checkbox picker
 function isSplitCategory(cat) {
   return cat === 'Food & Treats' || cat === 'Supplements';
 }
@@ -772,9 +779,11 @@ function updateExpenseDogField() {
   const dogs = activeDogs();
 
   if (isSplitCategory(cat)) {
+    // Show dog checkbox picker, hide single-dog fields
     splitRow.style.display = 'block';
     sharedRow.style.display = 'none';
     dogRow.style.display = 'none';
+    // Build checkboxes, all checked by default
     splitRow.querySelector('#exp-split-dogs').innerHTML = dogs.map(d =>
       `<label class="exp-split-label">
         <input type="checkbox" class="exp-split-check" value="${d.id}" checked style="accent-color:var(--orange);width:auto">
@@ -782,9 +791,11 @@ function updateExpenseDogField() {
       </label>`
     ).join('');
   } else {
+    // Vet / Medication: shared toggle + single dog select
     splitRow.style.display = 'none';
     sharedRow.style.display = 'flex';
     toggleExpenseShared();
+    // Populate single dog select
     const sel = document.getElementById('exp-dog-select');
     sel.innerHTML = dogs.map(d=>`<option value="${d.id}">${d.name}</option>`).join('');
     if (state.activeDogId !== null) sel.value = state.activeDogId;
@@ -811,6 +822,7 @@ function saveExpense() {
   let dogId = null;
 
   if (isSplitCategory(category)) {
+    // Collect checked dog ids
     const checked = [...document.querySelectorAll('.exp-split-check:checked')].map(cb=>parseInt(cb.value));
     if (checked.length === 0) { showToast('Select at least one dog'); return; }
     splitDogIds = checked;
