@@ -25,6 +25,7 @@ window._fbLoad = async function(uid) {
     // ── Load dogs ──
     const snap = await getDocs(collection(db, 'users', uid, 'dogs'));
     if (snap.empty) return null;
+
     const dogs = snap.docs.map((d, i) => {
       const data = d.data();
       return {
@@ -38,37 +39,48 @@ window._fbLoad = async function(uid) {
         entries: data.entries || []
       };
     });
+
     // Sort alphabetically so order is consistent
     dogs.sort((a, b) => a.name.localeCompare(b.name));
     // Re-assign sequential ids after sort
     dogs.forEach((d, i) => { d.id = i; });
 
-    // ── Load expenses ──
+    // FIX: never default to an archived dog — pick first active dog,
+    // only fall back to any dog if everything is archived
+    const nonArchived = dogs.filter(d => !d.archived);
+    const defaultDog = nonArchived.length ? nonArchived[0] : dogs[0];
+
+    // ── Load expenses from users/{uid}/meta/expenses ──
     let expenses = [];
     try {
       const expSnap = await getDoc(doc(db, 'users', uid, 'meta', 'expenses'));
       if (expSnap.exists()) {
         expenses = expSnap.data().list || [];
       }
-    } catch(e) { console.warn('Firestore expenses load failed:', e); }
+    } catch(e) {
+      console.warn('Firestore expenses load failed:', e);
+    }
 
-    return { activeDogId: dogs[0]?.id ?? null, dogs, expenses };
+    return { activeDogId: defaultDog?.id ?? null, dogs, expenses };
+
   } catch(e) { console.warn('Firestore load failed:', e); return null; }
 };
 
 // Save state — write each dog back to its own doc in the sub-collection,
 // AND write all expenses to users/{uid}/meta/expenses
+// Also deletes any Firestore docs that no longer exist in local state
 window._fbSave = async function(state) {
   try {
     const uid = window._currentUser?.uid;
     if (!uid) return;
 
-    // ── Save dogs ──
-    // Get existing Firestore docs so we can delete removed ones
+    // Get existing Firestore dog docs so we can delete removed ones
     const snap = await getDocs(collection(db, 'users', uid, 'dogs'));
     const existingNames = new Set(snap.docs.map(d => d.id));
     const currentNames = new Set(state.dogs.map(d => d.name));
+
     const batch = writeBatch(db);
+
     // Write current dogs
     for (const dog of state.dogs) {
       const ref = doc(db, 'users', uid, 'dogs', dog.name);
@@ -82,14 +94,16 @@ window._fbSave = async function(state) {
         entries: dog.entries || []
       });
     }
-    // Delete any Firestore docs no longer in state
+
+    // Delete any Firestore dog docs no longer in state
     for (const name of existingNames) {
       if (!currentNames.has(name)) {
         batch.delete(doc(db, 'users', uid, 'dogs', name));
       }
     }
 
-    // ── Save expenses into users/{uid}/meta/expenses ──
+    // Write expenses into users/{uid}/meta/expenses as a single doc with an array.
+    // Expenses are user-level (not per-dog) because they can be split across dogs.
     const expRef = doc(db, 'users', uid, 'meta', 'expenses');
     batch.set(expRef, { list: state.expenses || [] });
 
