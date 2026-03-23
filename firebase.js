@@ -18,18 +18,18 @@ const db = getFirestore(app);
 window._fbAuth = auth;
 window._fbFns = { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged };
 
-// Load dogs from users/{uid}/dogs/ sub-collection
-// AND expenses from users/{uid}/meta/expenses doc
 window._fbLoad = async function(uid) {
   try {
-    // ── Load dogs ──
     const snap = await getDocs(collection(db, 'users', uid, 'dogs'));
     if (snap.empty) return null;
 
-    const dogs = snap.docs.map((d, i) => {
+    const dogs = snap.docs.map((d) => {
       const data = d.data();
       return {
-        id: i,
+        // CRITICAL: restore the original numeric id saved in Firestore.
+        // Expenses reference dogs by this id (dogId / splitDogIds).
+        // Never reassign sequential ids — that breaks expense associations.
+        id: typeof data.id === 'number' ? data.id : null,
         name: data.name || d.id,
         breed: data.breed || '',
         birthday: data.birthday || '',
@@ -40,17 +40,18 @@ window._fbLoad = async function(uid) {
       };
     });
 
-    // Sort alphabetically so order is consistent
-    dogs.sort((a, b) => a.name.localeCompare(b.name));
-    // Re-assign sequential ids after sort
-    dogs.forEach((d, i) => { d.id = i; });
+    // Legacy fallback: if any dog is missing a saved id, assign based on
+    // alphabetical sort so this session at least stays internally consistent.
+    const missingIds = dogs.some(d => d.id === null);
+    if (missingIds) {
+      dogs.sort((a, b) => a.name.localeCompare(b.name));
+      dogs.forEach((d, i) => { if (d.id === null) d.id = i; });
+    }
 
-    // FIX: never default to an archived dog — pick first active dog,
-    // only fall back to any dog if everything is archived
     const nonArchived = dogs.filter(d => !d.archived);
     const defaultDog = nonArchived.length ? nonArchived[0] : dogs[0];
 
-    // ── Load expenses from users/{uid}/meta/expenses ──
+    // Load expenses
     let expenses = [];
     try {
       const expSnap = await getDoc(doc(db, 'users', uid, 'meta', 'expenses'));
@@ -66,25 +67,21 @@ window._fbLoad = async function(uid) {
   } catch(e) { console.warn('Firestore load failed:', e); return null; }
 };
 
-// Save state — write each dog back to its own doc in the sub-collection,
-// AND write all expenses to users/{uid}/meta/expenses
-// Also deletes any Firestore docs that no longer exist in local state
 window._fbSave = async function(state) {
   try {
     const uid = window._currentUser?.uid;
     if (!uid) return;
 
-    // Get existing Firestore dog docs so we can delete removed ones
     const snap = await getDocs(collection(db, 'users', uid, 'dogs'));
     const existingNames = new Set(snap.docs.map(d => d.id));
     const currentNames = new Set(state.dogs.map(d => d.name));
 
     const batch = writeBatch(db);
 
-    // Write current dogs
     for (const dog of state.dogs) {
       const ref = doc(db, 'users', uid, 'dogs', dog.name);
       batch.set(ref, {
+        id: dog.id,                        // ← persist numeric id so expenses stay linked
         name: dog.name,
         breed: dog.breed || '',
         birthday: dog.birthday || '',
@@ -95,15 +92,13 @@ window._fbSave = async function(state) {
       });
     }
 
-    // Delete any Firestore dog docs no longer in state
     for (const name of existingNames) {
       if (!currentNames.has(name)) {
         batch.delete(doc(db, 'users', uid, 'dogs', name));
       }
     }
 
-    // Write expenses into users/{uid}/meta/expenses as a single doc with an array.
-    // Expenses are user-level (not per-dog) because they can be split across dogs.
+    // Expenses saved as a single doc array — user-level, not per-dog
     const expRef = doc(db, 'users', uid, 'meta', 'expenses');
     batch.set(expRef, { list: state.expenses || [] });
 
@@ -111,7 +106,6 @@ window._fbSave = async function(state) {
   } catch(e) { console.warn('Firestore save failed:', e); }
 };
 
-// Immediately delete a single dog doc from Firestore by name
 window._fbDeleteDog = async function(dogName) {
   try {
     const uid = window._currentUser?.uid;
