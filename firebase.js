@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, doc, setDoc, getDocs, writeBatch, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs, writeBatch, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB07OUcurYPUhX1pYUUyJE4B20kaoczkgY",
@@ -19,8 +19,10 @@ window._fbAuth = auth;
 window._fbFns = { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged };
 
 // Load dogs from users/{uid}/dogs/ sub-collection
+// AND expenses from users/{uid}/meta/expenses doc
 window._fbLoad = async function(uid) {
   try {
+    // ── Load dogs ──
     const snap = await getDocs(collection(db, 'users', uid, 'dogs'));
     if (snap.empty) return null;
     const dogs = snap.docs.map((d, i) => {
@@ -41,21 +43,27 @@ window._fbLoad = async function(uid) {
     // Re-assign sequential ids after sort
     dogs.forEach((d, i) => { d.id = i; });
 
-    // FIX: never default to an archived dog — pick first active dog,
-    // only fall back to any dog if everything is archived
-    const nonArchived = dogs.filter(d => !d.archived);
-    const defaultDog = nonArchived.length ? nonArchived[0] : dogs[0];
+    // ── Load expenses ──
+    let expenses = [];
+    try {
+      const expSnap = await getDoc(doc(db, 'users', uid, 'meta', 'expenses'));
+      if (expSnap.exists()) {
+        expenses = expSnap.data().list || [];
+      }
+    } catch(e) { console.warn('Firestore expenses load failed:', e); }
 
-    return { activeDogId: defaultDog?.id ?? null, dogs };
+    return { activeDogId: dogs[0]?.id ?? null, dogs, expenses };
   } catch(e) { console.warn('Firestore load failed:', e); return null; }
 };
 
-// Save state — write each dog back to its own doc in the sub-collection
-// Also deletes any Firestore docs that no longer exist in local state
+// Save state — write each dog back to its own doc in the sub-collection,
+// AND write all expenses to users/{uid}/meta/expenses
 window._fbSave = async function(state) {
   try {
     const uid = window._currentUser?.uid;
     if (!uid) return;
+
+    // ── Save dogs ──
     // Get existing Firestore docs so we can delete removed ones
     const snap = await getDocs(collection(db, 'users', uid, 'dogs'));
     const existingNames = new Set(snap.docs.map(d => d.id));
@@ -80,6 +88,11 @@ window._fbSave = async function(state) {
         batch.delete(doc(db, 'users', uid, 'dogs', name));
       }
     }
+
+    // ── Save expenses into users/{uid}/meta/expenses ──
+    const expRef = doc(db, 'users', uid, 'meta', 'expenses');
+    batch.set(expRef, { list: state.expenses || [] });
+
     await batch.commit();
   } catch(e) { console.warn('Firestore save failed:', e); }
 };
