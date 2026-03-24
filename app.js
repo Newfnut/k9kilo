@@ -7,6 +7,7 @@ function defaultState() {
 function load() { try { const s=JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultState(); if(!s.expenses) s.expenses=[]; return s; } catch(e) { return defaultState(); } }
 function save() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+  window._state = state; // keep global reference in sync
   if (window._currentUser && window._fbSave) window._fbSave(state);
 }
 window._onLogin = function(user) {
@@ -16,14 +17,19 @@ window._onLogin = function(user) {
         // If expenses is null, Firestore had no doc yet — keep whatever is local
         if (cloudState.expenses === null) cloudState.expenses = state.expenses || [];
         state = cloudState;
+        // Expose state globally so the live listener can update it
+        window._state = state;
         nextId = state.dogs.length ? Math.max(...state.dogs.map(d=>d.id))+1 : 1;
       }
       render();
+      // Start live listener AFTER initial load
+      if (window._fbListen) window._fbListen(user.uid);
     });
   } else { render(); }
 };
 
 let state = load();
+window._state = state; // exposed for live listener
 let unit = 'lbs';
 let currentTab = 'home';
 let editMode = false;
