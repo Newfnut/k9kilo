@@ -150,28 +150,30 @@
     </div>
     <button class="btn" onclick="addEntry()">Save Entry</button>
   </div>
+  <div class="card" id="card-history-log" style="display:block">
+    <div class="card-title">History</div>
+    <div id="history-list"><div class="empty">No entries yet</div></div>
+  </div>
 </div>
 
-<!-- ══ EXPENSES SCREEN ══ -->
+<!-- ══ EXPENSES SCREEN ══
+     Order: Cost Per Dog → Log Expense → Category Breakdown → Month Picker → Transactions
+-->
 <div id="screen-expenses" class="scroll-area" style="display:none">
 
-  <!-- Month navigator -->
-  <div class="card" style="padding:14px 18px">
-    <div style="display:flex;align-items:center;justify-content:space-between">
-      <button id="exp-prev-btn" onclick="prevExpenseMonth()" style="background:none;border:none;color:var(--orange);font-size:22px;cursor:pointer;padding:4px 10px;border-radius:10px">‹</button>
-      <div id="exp-month-label" style="font-size:15px;font-weight:700;color:var(--text)"></div>
-      <button id="exp-next-btn" onclick="nextExpenseMonth()" style="background:none;border:none;color:var(--orange);font-size:22px;cursor:pointer;padding:4px 10px;border-radius:10px">›</button>
-    </div>
-  </div>
-
-  <!-- Per-dog summary -->
+  <!-- 1. Cost Per Dog summary -->
   <div class="card">
     <div class="card-title">Cost Per Dog</div>
     <div id="exp-summary" style="display:flex;flex-wrap:wrap;gap:8px"></div>
   </div>
 
-  <!-- Category breakdown -->
-  <div class="card">
+  <!-- 2. Log Expense CTA -->
+  <div style="padding:0 14px">
+    <button class="btn" onclick="openAddExpense()">+ Log Expense</button>
+  </div>
+
+  <!-- 3. Category breakdown -->
+  <div class="card" style="margin-top:12px">
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px">
       <div class="card-title" style="margin:0">Category Breakdown</div>
       <div style="font-size:13px;font-weight:700;color:var(--text)">Total: <span id="exp-grand-total">$0.00</span></div>
@@ -179,7 +181,16 @@
     <div id="exp-cat-breakdown"></div>
   </div>
 
-  <!-- Transactions -->
+  <!-- 4. Month navigator -->
+  <div class="card" style="padding:12px 18px">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <button id="exp-prev-btn" onclick="prevExpenseMonth()" style="background:none;border:none;color:var(--orange);font-size:24px;cursor:pointer;padding:4px 12px;border-radius:10px;line-height:1">‹</button>
+      <div id="exp-month-label" style="font-size:15px;font-weight:700;color:var(--text)"></div>
+      <button id="exp-next-btn" onclick="nextExpenseMonth()" style="background:none;border:none;color:var(--orange);font-size:24px;cursor:pointer;padding:4px 12px;border-radius:10px;line-height:1">›</button>
+    </div>
+  </div>
+
+  <!-- 5. Transactions -->
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
       <div class="card-title" style="margin:0">Transactions</div>
@@ -188,10 +199,7 @@
     <div id="exp-list"></div>
   </div>
 
-  <!-- Add button -->
-  <div style="padding:0 14px 8px">
-    <button class="btn" onclick="openAddExpense()">+ Log Expense</button>
-  </div>
+  <div style="height:16px"></div>
 </div>
 
 <div id="screen-profile" class="scroll-area" style="display:none">
@@ -310,50 +318,87 @@
 
 <!-- EXPENSE MODAL -->
 <div class="overlay" id="expense-overlay">
-  <div class="modal">
-    <div class="modal-title" id="exp-overlay-title">Add Expense</div>
-    <div style="margin-top:8px">
+  <div class="modal" style="max-height:88vh;overflow-y:auto">
+    <div class="modal-title" id="exp-overlay-title">Log Expense</div>
+
+    <div style="margin-top:10px">
+
+      <!-- Date + Amount -->
       <div class="two-col">
         <div class="field-wrap">
           <p class="field-label">Date</p>
           <input type="date" id="exp-date">
         </div>
         <div class="field-wrap">
-          <p class="field-label">Amount ($)</p>
+          <p class="field-label">Bill Amount ($)</p>
           <input type="number" id="exp-amount" placeholder="0.00" step="0.01" min="0">
         </div>
       </div>
+
+      <!-- Category -->
       <div class="field-wrap">
         <p class="field-label">Category</p>
-        <select id="exp-category" onchange="updateExpenseDogField()">
-          <option>Vet Visit</option>
-          <option>Food & Treats</option>
-          <option>Medication</option>
-          <option>Supplements</option>
+        <select id="exp-category" onchange="updateExpenseCategoryFields()">
+          <option value="Food">🍖 Food</option>
+          <option value="Vegetables">🥦 Vegetables</option>
+          <option value="Supplements">🌿 Supplements</option>
+          <option value="Pet Insurance">🛡️ Pet Insurance</option>
+          <option value="Veterinary">🏥 Veterinary</option>
         </select>
       </div>
-      <!-- Split dog checkboxes (Food & Treats / Supplements) -->
+
+      <!-- Sub-field: Type (Food) -->
+      <div class="field-wrap" id="exp-subfield-type" style="display:none">
+        <p class="field-label">Type <span style="color:var(--text-muted);font-weight:400">(e.g. Dry, Wet, Raw)</span></p>
+        <input type="text" id="exp-field-type" placeholder="e.g. Dry kibble, Raw">
+      </div>
+
+      <!-- Sub-field: Where (Food, Vegetables) -->
+      <div class="field-wrap" id="exp-subfield-where" style="display:none">
+        <p class="field-label">Where <span style="color:var(--text-muted);font-weight:400">(store / source)</span></p>
+        <input type="text" id="exp-field-where" placeholder="e.g. PetSmart, Costco, Farm">
+      </div>
+
+      <!-- Sub-field: Kind (Supplements) -->
+      <div class="field-wrap" id="exp-subfield-kind" style="display:none">
+        <p class="field-label">Kind <span style="color:var(--text-muted);font-weight:400">(supplement name)</span></p>
+        <input type="text" id="exp-field-kind" placeholder="e.g. Fish oil, Probiotics">
+      </div>
+
+      <!-- Sub-field: Reimbursement (Veterinary) -->
+      <div class="field-wrap" id="exp-subfield-reimbursement" style="display:none">
+        <p class="field-label">Insurance Reimbursement ($) <span style="color:var(--green);font-weight:400">credit</span></p>
+        <input type="number" id="exp-field-reimb" placeholder="0.00" step="0.01" min="0">
+        <p style="font-size:11px;color:var(--text-muted);margin-top:5px">Net cost = Bill − Reimbursement</p>
+      </div>
+
+      <!-- Dog assignment: split checkboxes (Food, Vegetables, Supplements) -->
       <div class="field-wrap" id="exp-split-row" style="display:none">
         <p class="field-label">Split between</p>
         <div id="exp-split-dogs" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px"></div>
       </div>
-      <!-- Shared toggle (Vet / Medication) -->
+
+      <!-- Dog assignment: shared toggle (Vet, Insurance) -->
       <div class="field-wrap" id="exp-shared-row" style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text-soft);font-weight:500">
           <input type="checkbox" id="exp-shared" onchange="toggleExpenseShared()" style="width:auto;accent-color:var(--orange)">
           Shared across all dogs
         </label>
       </div>
-      <!-- Single dog picker (shown when not shared, Vet / Medication) -->
+
+      <!-- Single dog picker -->
       <div class="field-wrap" id="exp-dog-row">
         <p class="field-label">Which dog?</p>
         <select id="exp-dog-select"></select>
       </div>
+
+      <!-- Notes -->
       <div class="field-wrap">
         <p class="field-label">Notes <span style="color:var(--text-muted);font-weight:400">(optional)</span></p>
         <input type="text" id="exp-notes" placeholder="e.g. Annual checkup, Royal Canin 30lb bag">
       </div>
     </div>
+
     <div class="modal-btns">
       <button class="btn btn-glass" onclick="closeExpenseOverlay()">Cancel</button>
       <button class="btn" onclick="saveExpense()">Save</button>

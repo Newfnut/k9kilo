@@ -7,29 +7,26 @@ function defaultState() {
 function load() { try { const s=JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultState(); if(!s.expenses) s.expenses=[]; return s; } catch(e) { return defaultState(); } }
 function save() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
-  window._state = state; // keep global reference in sync
+  window._state = state;
   if (window._currentUser && window._fbSave) window._fbSave(state);
 }
 window._onLogin = function(user) {
   if (window._fbLoad) {
     window._fbLoad(user.uid).then(cloudState => {
       if (cloudState) {
-        // If expenses is null, Firestore had no doc yet — keep whatever is local
         if (cloudState.expenses === null) cloudState.expenses = state.expenses || [];
         state = cloudState;
-        // Expose state globally so the live listener can update it
         window._state = state;
         nextId = state.dogs.length ? Math.max(...state.dogs.map(d=>d.id))+1 : 1;
       }
       render();
-      // Start live listener AFTER initial load
       if (window._fbListen) window._fbListen(user.uid);
     });
   } else { render(); }
 };
 
 let state = load();
-window._state = state; // exposed for live listener
+window._state = state;
 let unit = 'lbs';
 let currentTab = 'home';
 let editMode = false;
@@ -37,9 +34,8 @@ let pendingDelete = null;
 let editEntryIdx = null;
 let nextId = state.dogs.length ? Math.max(...state.dogs.map(d=>d.id)) + 1 : 1;
 
-// Expense state
 let expenseEditId = null;
-let expenseViewMonth = null; // null = current month
+let expenseViewMonth = null;
 
 function activeDog() { return state.dogs.find(d => d.id === state.activeDogId); }
 function activeDogs() { return state.dogs.filter(d => !d.archived); }
@@ -49,7 +45,7 @@ function sorted(dog) { return [...(dog||activeDog()).entries].sort((a,b)=>new Da
 function cvt(lbs) { return unit==='kg' ? (lbs*0.453592).toFixed(1) : parseFloat(lbs).toFixed(1); }
 function fmtDate(d) { return new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
 function fmtDateLong(d) { return new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}); }
-function fmtMoney(n) { return '$'+parseFloat(n).toFixed(2); }
+function fmtMoney(n) { const v=parseFloat(n)||0; return (v<0?'-$':'$')+Math.abs(v).toFixed(2); }
 
 function dogAge(birthday, atDate, dog) {
   if (!birthday) return null;
@@ -581,26 +577,42 @@ function getGPS(targetId) {
 function tryAutoGPS(){const loc=document.getElementById('input-location');if(!loc.value&&navigator.geolocation)getGPS('input-location');}
 
 // ══════════════════════════════════════════════
-//  EXPENSES
+//  EXPENSES — Redesigned
 // ══════════════════════════════════════════════
 
-const EXP_CATEGORIES = ['Vet Visit', 'Food & Treats', 'Medication', 'Supplements'];
-const EXP_ICONS = { 'Vet Visit': '🏥', 'Food & Treats': '🍖', 'Medication': '💊', 'Supplements': '🌿' };
+// Category definitions with icon, subfields, and display config
+const EXP_CATEGORIES = [
+  { key: 'Food',          icon: '🍖', label: 'Food',          fields: ['type','where'] },
+  { key: 'Vegetables',    icon: '🥦', label: 'Vegetables',    fields: ['where'] },
+  { key: 'Supplements',   icon: '🌿', label: 'Supplements',   fields: ['kind'] },
+  { key: 'Pet Insurance', icon: '🛡️', label: 'Pet Insurance', fields: [] },
+  { key: 'Veterinary',    icon: '🏥', label: 'Veterinary',    fields: ['reimbursement'] },
+];
 
-// Calculates each dog's share of an expense.
-// splitDogIds = array of dog ids to split across (used for Food, Supplements, and shared Vet/Meds)
-// dogId = single dog id (used when not split)
+const EXP_CAT_MAP = {};
+EXP_CATEGORIES.forEach(c => { EXP_CAT_MAP[c.key] = c; });
+
+function expCatIcon(key) { return EXP_CAT_MAP[key]?.icon || '💰'; }
+function expCatLabel(key) { return EXP_CAT_MAP[key]?.label || key; }
+
+// Net amount for display (bill - reimbursement)
+function expNetAmount(exp) {
+  const bill = parseFloat(exp.amount) || 0;
+  const reimb = parseFloat(exp.reimbursement) || 0;
+  return bill - reimb;
+}
+
 function expenseEffectiveAmountForDog(exp, dogId) {
+  const net = expNetAmount(exp);
   if (exp.splitDogIds && exp.splitDogIds.length > 0) {
-    if (exp.splitDogIds.includes(dogId)) return exp.amount / exp.splitDogIds.length;
+    if (exp.splitDogIds.includes(dogId)) return net / exp.splitDogIds.length;
     return 0;
   }
   if (exp.shared) {
-    // Legacy fallback: shared across all active dogs
     const numActive = activeDogs().length || 1;
-    return exp.amount / numActive;
+    return net / numActive;
   }
-  if (exp.dogId === dogId) return exp.amount;
+  if (exp.dogId === dogId) return net;
   return 0;
 }
 
@@ -637,7 +649,6 @@ function renderExpenses() {
   const monthLabel = new Date(y, m-1, 1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
   document.getElementById('exp-month-label').textContent = monthLabel;
 
-  // Nav arrows
   const now = new Date();
   const nowKey = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
   document.getElementById('exp-next-btn').style.opacity = monthKey >= nowKey ? '0.3' : '1';
@@ -646,91 +657,107 @@ function renderExpenses() {
   const dogs = activeDogs();
   const monthExps = expensesForMonth(monthKey);
 
-  // ── Summary cards (per dog)
+  // ── 1. Cost Per Dog summary cards
   const summaryEl = document.getElementById('exp-summary');
   if (dogs.length === 0) {
     summaryEl.innerHTML = '<div class="empty">No pets added yet</div>';
   } else {
     summaryEl.innerHTML = dogs.map(dog => {
       const total = monthExps.reduce((sum, e) => sum + expenseEffectiveAmountForDog(e, dog.id), 0);
-      const vetTotal = monthExps.filter(e=>e.category==='Vet Visit').reduce((sum,e)=>sum+expenseEffectiveAmountForDog(e,dog.id),0);
-      const foodTotal = monthExps.filter(e=>e.category==='Food & Treats').reduce((sum,e)=>sum+expenseEffectiveAmountForDog(e,dog.id),0);
-      const medTotal = monthExps.filter(e=>e.category==='Medication').reduce((sum,e)=>sum+expenseEffectiveAmountForDog(e,dog.id),0);
-      const supTotal = monthExps.filter(e=>e.category==='Supplements').reduce((sum,e)=>sum+expenseEffectiveAmountForDog(e,dog.id),0);
+      const bycat = {};
+      EXP_CATEGORIES.forEach(c => {
+        bycat[c.key] = monthExps.filter(e=>e.category===c.key).reduce((sum,e)=>sum+expenseEffectiveAmountForDog(e,dog.id),0);
+      });
+      const breakdown = EXP_CATEGORIES.map(c =>
+        `<span title="${c.label}">${c.icon} ${fmtMoney(bycat[c.key])}</span>`
+      ).join('');
       return `<div class="exp-dog-card">
         <div class="exp-dog-name">${dog.name}</div>
         <div class="exp-dog-total">${fmtMoney(total)}</div>
-        <div class="exp-dog-breakdown">
-          <span>${EXP_ICONS['Vet Visit']} ${fmtMoney(vetTotal)}</span>
-          <span>${EXP_ICONS['Food & Treats']} ${fmtMoney(foodTotal)}</span>
-          <span>${EXP_ICONS['Medication']} ${fmtMoney(medTotal)}</span>
-          <span>${EXP_ICONS['Supplements']} ${fmtMoney(supTotal)}</span>
-        </div>
+        <div class="exp-dog-breakdown">${breakdown}</div>
       </div>`;
     }).join('');
   }
 
-  // ── Category breakdown totals
+  // ── 2. Category breakdown
   const catEl = document.getElementById('exp-cat-breakdown');
-  const grandTotal = monthExps.reduce((sum,e)=>sum+e.amount,0);
+  const grandTotal = monthExps.reduce((sum,e)=>sum+expNetAmount(e),0);
   catEl.innerHTML = EXP_CATEGORIES.map(cat => {
-    const catTotal = monthExps.filter(e=>e.category===cat).reduce((sum,e)=>sum+e.amount,0);
+    const catTotal = monthExps.filter(e=>e.category===cat.key).reduce((sum,e)=>sum+expNetAmount(e),0);
     const pct = grandTotal > 0 ? Math.round(catTotal/grandTotal*100) : 0;
     return `<div class="exp-cat-row">
-      <span class="exp-cat-icon">${EXP_ICONS[cat]}</span>
-      <span class="exp-cat-name">${cat}</span>
-      <div class="exp-cat-bar-wrap"><div class="exp-cat-bar" style="width:${pct}%"></div></div>
+      <span class="exp-cat-icon">${cat.icon}</span>
+      <span class="exp-cat-name">${cat.label}</span>
+      <div class="exp-cat-bar-wrap"><div class="exp-cat-bar" style="width:${Math.max(0,pct)}%"></div></div>
       <span class="exp-cat-amt">${fmtMoney(catTotal)}</span>
     </div>`;
   }).join('');
   document.getElementById('exp-grand-total').textContent = fmtMoney(grandTotal);
 
-  // ── Transaction list
+  // ── 3. Transactions
   const listEl = document.getElementById('exp-list');
-  const sorted = [...monthExps].sort((a,b)=>b.date.localeCompare(a.date));
-  if (sorted.length === 0) {
+  const sortedExps = [...monthExps].sort((a,b)=>b.date.localeCompare(a.date));
+  if (sortedExps.length === 0) {
     listEl.innerHTML = '<div class="empty">No expenses this month</div>';
   } else {
-    listEl.innerHTML = sorted.map(e => {
+    listEl.innerHTML = sortedExps.map(e => {
+      // Dog tag
       let dogLabel = '';
       if (e.splitDogIds && e.splitDogIds.length > 0) {
         const names = e.splitDogIds.map(id => { const d = state.dogs.find(x=>x.id===id); return d ? d.name : '?'; });
         const allActive = activeDogs().every(d => e.splitDogIds.includes(d.id)) && e.splitDogIds.length === activeDogs().length;
-        if (allActive) {
-          dogLabel = `<span class="exp-tag exp-tag-shared">All ÷${e.splitDogIds.length}</span>`;
-        } else {
-          dogLabel = names.map(n=>`<span class="exp-tag exp-tag-shared">${n}</span>`).join('');
-        }
+        dogLabel = allActive
+          ? `<span class="exp-tag exp-tag-shared">All ÷${e.splitDogIds.length}</span>`
+          : names.map(n=>`<span class="exp-tag exp-tag-shared">${n}</span>`).join('');
       } else if (e.shared) {
         dogLabel = `<span class="exp-tag exp-tag-shared">Shared ÷${dogs.length}</span>`;
       } else {
         const dog = state.dogs.find(d=>d.id===e.dogId);
         dogLabel = dog ? `<span class="exp-tag">${dog.name}</span>` : '';
       }
+
+      // Sub-field lines
+      const lines = [];
+      if (e.expType) lines.push(`<div class="exp-tx-field"><span class="exp-tx-label">Type</span><span class="exp-tx-val">${e.expType}</span></div>`);
+      if (e.where) lines.push(`<div class="exp-tx-field"><span class="exp-tx-label">Where</span><span class="exp-tx-val">${e.where}</span></div>`);
+      if (e.kind) lines.push(`<div class="exp-tx-field"><span class="exp-tx-label">Kind</span><span class="exp-tx-val">${e.kind}</span></div>`);
+      if (e.reimbursement) lines.push(`<div class="exp-tx-field"><span class="exp-tx-label">Reimbursed</span><span class="exp-tx-val exp-tx-credit">−${fmtMoney(e.reimbursement)}</span></div>`);
+      if (e.notes) lines.push(`<div class="exp-tx-field"><span class="exp-tx-label">Note</span><span class="exp-tx-val">${e.notes}</span></div>`);
+
+      const net = expNetAmount(e);
+      const hasReim = parseFloat(e.reimbursement||0)>0;
+
       return `<div class="exp-item">
-        <div class="exp-item-icon">${EXP_ICONS[e.category]||'💰'}</div>
+        <div class="exp-item-icon">${expCatIcon(e.category)}</div>
         <div style="flex:1;min-width:0">
-          <div class="exp-item-cat">${e.category} ${dogLabel}</div>
-          <div class="exp-item-meta">${fmtDate(e.date)}${e.notes?' · '+e.notes:''}</div>
+          <div class="exp-item-cat">${expCatLabel(e.category)} ${dogLabel}</div>
+          <div class="exp-item-date">${fmtDate(e.date)}</div>
+          ${lines.join('')}
         </div>
-        <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
-          <div class="exp-item-amt">${fmtMoney(e.amount)}</div>
-          <button style="background:none;border:none;color:rgba(232,98,26,0.6);font-size:15px;cursor:pointer;padding:4px 6px;border-radius:8px" onclick="openEditExpense('${e.id}')">✏️</button>
-          <button class="delete-btn" onclick="deleteExpense('${e.id}')">×</button>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0;padding-left:8px">
+          <div style="display:flex;align-items:center;gap:4px">
+            <button class="exp-action-btn" onclick="openEditExpense('${e.id}')">✏️</button>
+            <button class="exp-action-btn exp-action-del" onclick="confirmDeleteExpense('${e.id}')">×</button>
+          </div>
+          ${hasReim
+            ? `<div class="exp-item-amt-wrap"><div class="exp-item-amt-orig">${fmtMoney(e.amount)}</div><div class="exp-item-amt exp-item-amt-net">${fmtMoney(net)}</div></div>`
+            : `<div class="exp-item-amt">${fmtMoney(e.amount)}</div>`}
         </div>
       </div>`;
     }).join('');
   }
 }
 
+// ── Expense overlay helpers
+
 function openAddExpense() {
   expenseEditId = null;
-  document.getElementById('exp-overlay-title').textContent = 'Add Expense';
+  document.getElementById('exp-overlay-title').textContent = 'Log Expense';
   document.getElementById('exp-date').value = new Date().toISOString().split('T')[0];
   document.getElementById('exp-amount').value = '';
   document.getElementById('exp-notes').value = '';
-  document.getElementById('exp-category').value = EXP_CATEGORIES[0];
-  updateExpenseDogField();
+  document.getElementById('exp-category').value = EXP_CATEGORIES[0].key;
+  updateExpenseCategoryFields();
   document.getElementById('expense-overlay').classList.add('show');
 }
 
@@ -740,27 +767,31 @@ function openEditExpense(id) {
   expenseEditId = id;
   document.getElementById('exp-overlay-title').textContent = 'Edit Expense';
   document.getElementById('exp-date').value = exp.date;
-  document.getElementById('exp-amount').value = exp.amount.toFixed(2);
+  document.getElementById('exp-amount').value = (parseFloat(exp.amount)||0).toFixed(2);
   document.getElementById('exp-notes').value = exp.notes||'';
   document.getElementById('exp-category').value = exp.category;
-  updateExpenseDogField();
+  updateExpenseCategoryFields();
   setTimeout(()=>{
-    const isSplitCat = ['Food & Treats','Supplements'].includes(exp.category);
-    if (isSplitCat) {
-      // Restore checked state of split dog checkboxes
+    // Restore sub-fields
+    if (document.getElementById('exp-field-type')) document.getElementById('exp-field-type').value = exp.expType||'';
+    if (document.getElementById('exp-field-where')) document.getElementById('exp-field-where').value = exp.where||'';
+    if (document.getElementById('exp-field-kind')) document.getElementById('exp-field-kind').value = exp.kind||'';
+    if (document.getElementById('exp-field-reimb')) document.getElementById('exp-field-reimb').value = exp.reimbursement||(exp.reimbursement===0?'0':'');
+
+    // Restore dog assignment
+    const catDef = EXP_CAT_MAP[exp.category];
+    const splitCats = ['Food','Vegetables','Supplements'];
+    if (splitCats.includes(exp.category)) {
       const preChecked = exp.splitDogIds || activeDogs().map(d=>d.id);
       document.querySelectorAll('.exp-split-check').forEach(cb => {
         cb.checked = preChecked.includes(parseInt(cb.value));
       });
     } else {
-      document.getElementById('exp-shared').checked = !!(exp.shared || (exp.splitDogIds && exp.splitDogIds.length > 1));
+      const sharedEl = document.getElementById('exp-shared');
+      sharedEl.checked = !!(exp.shared || (exp.splitDogIds && exp.splitDogIds.length > 1));
       toggleExpenseShared();
-      if (!document.getElementById('exp-shared').checked && exp.dogId !== undefined) {
+      if (!sharedEl.checked && exp.dogId !== undefined) {
         document.getElementById('exp-dog-select').value = exp.dogId;
-      } else if (exp.splitDogIds && exp.splitDogIds.length > 0) {
-        // Was a split, restore as shared + check all
-        document.getElementById('exp-shared').checked = true;
-        toggleExpenseShared();
       }
     }
   }, 0);
@@ -772,24 +803,30 @@ function closeExpenseOverlay() {
   expenseEditId = null;
 }
 
-// Categories that always use a dog checkbox picker
-function isSplitCategory(cat) {
-  return cat === 'Food & Treats' || cat === 'Supplements';
-}
+// Categories that split across dogs (checkbox picker)
+const SPLIT_CATS = ['Food','Vegetables','Supplements'];
 
-function updateExpenseDogField() {
+function updateExpenseCategoryFields() {
   const cat = document.getElementById('exp-category').value;
+  const catDef = EXP_CAT_MAP[cat] || {};
+  const fields = catDef.fields || [];
+  const dogs = activeDogs();
+
+  // Show/hide sub-fields
+  ['type','where','kind','reimbursement'].forEach(f => {
+    const el = document.getElementById('exp-subfield-'+f);
+    if (el) el.style.display = fields.includes(f) || (f==='reimbursement' && fields.includes('reimbursement')) ? 'block' : 'none';
+  });
+
+  // Dog assignment
   const splitRow = document.getElementById('exp-split-row');
   const sharedRow = document.getElementById('exp-shared-row');
   const dogRow = document.getElementById('exp-dog-row');
-  const dogs = activeDogs();
 
-  if (isSplitCategory(cat)) {
-    // Show dog checkbox picker, hide single-dog fields
+  if (SPLIT_CATS.includes(cat)) {
     splitRow.style.display = 'block';
     sharedRow.style.display = 'none';
     dogRow.style.display = 'none';
-    // Build checkboxes, all checked by default
     splitRow.querySelector('#exp-split-dogs').innerHTML = dogs.map(d =>
       `<label class="exp-split-label">
         <input type="checkbox" class="exp-split-check" value="${d.id}" checked style="accent-color:var(--orange);width:auto">
@@ -797,14 +834,13 @@ function updateExpenseDogField() {
       </label>`
     ).join('');
   } else {
-    // Vet / Medication: shared toggle + single dog select
     splitRow.style.display = 'none';
     sharedRow.style.display = 'flex';
-    toggleExpenseShared();
-    // Populate single dog select
     const sel = document.getElementById('exp-dog-select');
     sel.innerHTML = dogs.map(d=>`<option value="${d.id}">${d.name}</option>`).join('');
     if (state.activeDogId !== null) sel.value = state.activeDogId;
+    document.getElementById('exp-shared').checked = false;
+    toggleExpenseShared();
   }
 }
 
@@ -812,7 +848,7 @@ function toggleExpenseShared() {
   const shared = document.getElementById('exp-shared').checked;
   const cat = document.getElementById('exp-category').value;
   const dogRow = document.getElementById('exp-dog-row');
-  if (isSplitCategory(cat)) { dogRow.style.display='none'; return; }
+  if (SPLIT_CATS.includes(cat)) { dogRow.style.display='none'; return; }
   dogRow.style.display = shared ? 'none' : 'block';
 }
 
@@ -823,12 +859,19 @@ function saveExpense() {
   const notes = document.getElementById('exp-notes').value.trim();
   if (!amount || amount <= 0 || !date) { showToast('Please enter amount and date'); return; }
 
+  // Sub-fields
+  const expType = document.getElementById('exp-field-type')?.value.trim() || '';
+  const where = document.getElementById('exp-field-where')?.value.trim() || '';
+  const kind = document.getElementById('exp-field-kind')?.value.trim() || '';
+  const reimbursementRaw = document.getElementById('exp-field-reimb')?.value;
+  const reimbursement = reimbursementRaw !== '' && reimbursementRaw !== undefined ? parseFloat(reimbursementRaw)||0 : 0;
+
+  // Dog assignment
   let splitDogIds = null;
   let shared = false;
   let dogId = null;
 
-  if (isSplitCategory(category)) {
-    // Collect checked dog ids
+  if (SPLIT_CATS.includes(category)) {
     const checked = [...document.querySelectorAll('.exp-split-check:checked')].map(cb=>parseInt(cb.value));
     if (checked.length === 0) { showToast('Select at least one dog'); return; }
     splitDogIds = checked;
@@ -843,15 +886,15 @@ function saveExpense() {
 
   if (!state.expenses) state.expenses = [];
 
+  const record = { amount, date, category, notes, expType, where, kind, reimbursement, splitDogIds, shared, dogId };
+
   if (expenseEditId) {
     const idx = state.expenses.findIndex(e=>e.id===expenseEditId);
-    if (idx !== -1) {
-      state.expenses[idx] = { ...state.expenses[idx], amount, date, category, notes, splitDogIds, shared, dogId };
-    }
+    if (idx !== -1) state.expenses[idx] = { ...state.expenses[idx], ...record };
     showToast('Expense updated ✓');
   } else {
     const id = 'exp_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
-    state.expenses.push({ id, amount, date, category, notes, splitDogIds, shared, dogId });
+    state.expenses.push({ id, ...record });
     showToast('Expense saved! 💰');
   }
   save();
@@ -859,36 +902,50 @@ function saveExpense() {
   renderExpenses();
 }
 
-function deleteExpense(id) {
+function confirmDeleteExpense(id) {
+  const exp = (state.expenses||[]).find(e=>e.id===id);
+  if (!exp) return;
+  document.getElementById('confirm-title').textContent = 'Delete this expense?';
+  document.getElementById('confirm-sub').textContent = expCatLabel(exp.category) + ' · ' + fmtMoney(exp.amount) + '\n' + fmtDate(exp.date);
+  document.getElementById('confirm-ok').textContent = 'Delete';
+  document.getElementById('confirm-ok').onclick = () => { doDeleteExpense(id); closeConfirm(); };
+  document.getElementById('confirm-overlay').classList.add('show');
+}
+
+function doDeleteExpense(id) {
   state.expenses = (state.expenses||[]).filter(e=>e.id!==id);
   save();
   renderExpenses();
   showToast('Expense deleted');
 }
 
+// Keep old deleteExpense as alias (safety)
+function deleteExpense(id) { confirmDeleteExpense(id); }
+
 function exportExpensesCSV() {
   const dogs = activeDogs();
   const expenses = state.expenses || [];
   if (expenses.length === 0) { showToast('No expenses to export'); return; }
 
-  const rows = [['Date','Category','Amount','Per Dog Share','Dog / Allocation','Notes']];
-  const sorted = [...expenses].sort((a,b)=>a.date.localeCompare(b.date));
-  sorted.forEach(e => {
+  const rows = [['Date','Category','Bill Amount','Reimbursement','Net Amount','Per Dog Share','Dog / Allocation','Type','Where','Kind','Notes']];
+  const sortedExps = [...expenses].sort((a,b)=>a.date.localeCompare(b.date));
+  sortedExps.forEach(e => {
+    const net = expNetAmount(e);
     let alloc = '';
     let perDogShare = '';
     if (e.splitDogIds && e.splitDogIds.length > 0) {
       const names = e.splitDogIds.map(id => { const d = state.dogs.find(x=>x.id===id); return d?d.name:'?'; });
       alloc = names.join(', ');
-      perDogShare = (e.amount / e.splitDogIds.length).toFixed(2);
+      perDogShare = (net / e.splitDogIds.length).toFixed(2);
     } else if (e.shared) {
       alloc = 'Shared all dogs';
-      perDogShare = (e.amount / (dogs.length||1)).toFixed(2);
+      perDogShare = (net / (dogs.length||1)).toFixed(2);
     } else {
       const dog = state.dogs.find(d=>d.id===e.dogId);
       alloc = dog ? dog.name : 'Unknown';
-      perDogShare = e.amount.toFixed(2);
+      perDogShare = net.toFixed(2);
     }
-    rows.push([e.date, e.category, e.amount.toFixed(2), perDogShare, alloc, e.notes||'']);
+    rows.push([e.date, e.category, (parseFloat(e.amount)||0).toFixed(2), (parseFloat(e.reimbursement)||0).toFixed(2), net.toFixed(2), perDogShare, alloc, e.expType||'', e.where||'', e.kind||'', e.notes||'']);
   });
 
   const csv = rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
