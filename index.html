@@ -156,12 +156,10 @@
   </div>
 </div>
 
-<!-- ══ EXPENSES SCREEN ══
-     Order: Cost Per Dog → Log Expense → Category Breakdown → Month Picker → Transactions
--->
+<!-- ══ EXPENSES SCREEN ══ -->
 <div id="screen-expenses" class="scroll-area" style="display:none">
 
-  <!-- 1. Cost Per Dog summary -->
+  <!-- 1. Cost Per Dog -->
   <div class="card">
     <div class="card-title">Cost Per Dog</div>
     <div id="exp-summary" style="display:flex;flex-wrap:wrap;gap:8px"></div>
@@ -172,7 +170,7 @@
     <button class="btn" onclick="openAddExpense()">+ Log Expense</button>
   </div>
 
-  <!-- 3. Category breakdown -->
+  <!-- 3. Category Breakdown -->
   <div class="card" style="margin-top:12px">
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px">
       <div class="card-title" style="margin:0">Category Breakdown</div>
@@ -339,7 +337,7 @@
       <div class="field-wrap">
         <p class="field-label">Category</p>
         <select id="exp-category" onchange="updateExpenseCategoryFields()">
-          <option value="Food">🍖 Food</option>
+          <option value="Meat">🍖 Meat</option>
           <option value="Vegetables">🥦 Vegetables</option>
           <option value="Supplements">🌿 Supplements</option>
           <option value="Pet Insurance">🛡️ Pet Insurance</option>
@@ -347,32 +345,32 @@
         </select>
       </div>
 
-      <!-- Sub-field: Type (Food) -->
+      <!-- Sub-field: Type (Meat only) -->
       <div class="field-wrap" id="exp-subfield-type" style="display:none">
-        <p class="field-label">Type <span style="color:var(--text-muted);font-weight:400">(e.g. Dry, Wet, Raw)</span></p>
-        <input type="text" id="exp-field-type" placeholder="e.g. Dry kibble, Raw">
+        <p class="field-label">Type <span style="color:var(--text-muted);font-weight:400">(e.g. Raw, Dry, Wet)</span></p>
+        <input type="text" id="exp-field-type" placeholder="e.g. Raw chicken, Dry kibble">
       </div>
 
-      <!-- Sub-field: Where (Food, Vegetables) -->
+      <!-- Sub-field: Where (Meat + Vegetables) -->
       <div class="field-wrap" id="exp-subfield-where" style="display:none">
         <p class="field-label">Where <span style="color:var(--text-muted);font-weight:400">(store / source)</span></p>
-        <input type="text" id="exp-field-where" placeholder="e.g. PetSmart, Costco, Farm">
+        <input type="text" id="exp-field-where" placeholder="e.g. Costco, Farm, PetSmart">
       </div>
 
-      <!-- Sub-field: Kind (Supplements) -->
+      <!-- Sub-field: Kind (all categories) -->
       <div class="field-wrap" id="exp-subfield-kind" style="display:none">
-        <p class="field-label">Kind <span style="color:var(--text-muted);font-weight:400">(supplement name)</span></p>
-        <input type="text" id="exp-field-kind" placeholder="e.g. Fish oil, Probiotics">
+        <p class="field-label">Kind <span style="color:var(--text-muted);font-weight:400">(specific product or detail)</span></p>
+        <input type="text" id="exp-field-kind" placeholder="e.g. Fish oil, Royal Canin, Rabies shot">
       </div>
 
-      <!-- Sub-field: Reimbursement (Veterinary) -->
+      <!-- Sub-field: Reimbursement (Veterinary only) -->
       <div class="field-wrap" id="exp-subfield-reimbursement" style="display:none">
         <p class="field-label">Insurance Reimbursement ($) <span style="color:var(--green);font-weight:400">credit</span></p>
         <input type="number" id="exp-field-reimb" placeholder="0.00" step="0.01" min="0">
         <p style="font-size:11px;color:var(--text-muted);margin-top:5px">Net cost = Bill − Reimbursement</p>
       </div>
 
-      <!-- Dog assignment: split checkboxes (Food, Vegetables, Supplements) -->
+      <!-- Dog assignment: split checkboxes (Meat, Vegetables, Supplements) -->
       <div class="field-wrap" id="exp-split-row" style="display:none">
         <p class="field-label">Split between</p>
         <div id="exp-split-dogs" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px"></div>
@@ -395,7 +393,7 @@
       <!-- Notes -->
       <div class="field-wrap">
         <p class="field-label">Notes <span style="color:var(--text-muted);font-weight:400">(optional)</span></p>
-        <input type="text" id="exp-notes" placeholder="e.g. Annual checkup, Royal Canin 30lb bag">
+        <input type="text" id="exp-notes" placeholder="e.g. Annual checkup, 30lb bag">
       </div>
     </div>
 
