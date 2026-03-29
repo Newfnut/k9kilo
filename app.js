@@ -581,25 +581,21 @@ function tryAutoGPS(){const loc=document.getElementById('input-location');if(!lo
 // ══════════════════════════════════════════════
 
 /*
-  Category field matrix:
-  ┌─────────────────┬──────┬───────┬──────┬───────────────┐
-  │ Category        │ type │ where │ kind │ reimbursement │
-  ├─────────────────┼──────┼───────┼──────┼───────────────┤
-  │ Meat            │  ✓   │   ✓   │  ✓   │               │
-  │ Vegetables      │      │   ✓   │  ✓   │               │
-  │ Supplements     │      │       │  ✓   │               │
-  │ Pet Insurance   │      │       │  ✓   │               │
-  │ Veterinary      │      │       │  ✓   │       ✓       │
-  └─────────────────┴──────┴───────┴──────┴───────────────┘
+  All categories share: type, location, kind (all optional).
+  Veterinary additionally has: reimbursement.
+  All categories use the per-dog split checkbox UI.
 
-  SPLIT_CATS use per-dog checkbox UI; others use shared toggle / single picker.
+  Field key 'location' maps to exp-field-location in the DOM
+  (previously 'where' / exp-field-where — renamed for clarity).
 */
+
 const EXP_CATEGORIES = [
-  { key: 'Meat',          icon: '🍖', label: 'Meat',          fields: ['type','where','kind'] },
-  { key: 'Vegetables',    icon: '🥦', label: 'Vegetables',    fields: ['where','kind'] },
-  { key: 'Supplements',   icon: '🌿', label: 'Supplements',   fields: ['kind'] },
-  { key: 'Pet Insurance', icon: '🛡️', label: 'Pet Insurance', fields: ['kind'] },
-  { key: 'Veterinary',    icon: '🏥', label: 'Veterinary',    fields: ['kind','reimbursement'] },
+  { key: 'Meat',          icon: '🥩', label: 'Meat'          },
+  { key: 'Vegetables',    icon: '🥦', label: 'Vegetables'    },
+  { key: 'Supplements',   icon: '🌿', label: 'Supplements'   },
+  { key: 'Pet Insurance', icon: '🛡️', label: 'Pet Insurance' },
+  { key: 'Veterinary',    icon: '🏥', label: 'Veterinary'    },
+  { key: 'Chiropractor',  icon: '🦴', label: 'Chiropractor'  },
 ];
 
 const EXP_CAT_MAP = {};
@@ -608,7 +604,7 @@ EXP_CATEGORIES.forEach(c => { EXP_CAT_MAP[c.key] = c; });
 function expCatIcon(key) { return EXP_CAT_MAP[key]?.icon || '💰'; }
 function expCatLabel(key) { return EXP_CAT_MAP[key]?.label || key; }
 
-// Net = bill − reimbursement. Reimbursement is only meaningful for Veterinary.
+// Net = bill − reimbursement. Reimbursement only applies to Veterinary.
 function expNetAmount(exp) {
   const bill = parseFloat(exp.amount) || 0;
   const reimb = (exp.category === 'Veterinary') ? (parseFloat(exp.reimbursement) || 0) : 0;
@@ -681,7 +677,6 @@ function renderExpenses() {
       EXP_CATEGORIES.forEach(c => {
         bycat[c.key] = monthExps.filter(e=>e.category===c.key).reduce((sum,e)=>sum+expenseEffectiveAmountForDog(e,dog.id),0);
       });
-      // Only show categories with a non-zero amount in the per-dog breakdown
       const breakdown = EXP_CATEGORIES
         .filter(c => bycat[c.key] > 0)
         .map(c => `<span title="${c.label}">${c.icon} ${fmtMoney(bycat[c.key])}</span>`)
@@ -694,7 +689,7 @@ function renderExpenses() {
     }).join('');
   }
 
-  // ── 2. Category breakdown — only show categories that have data this month
+  // ── 2. Category breakdown
   const catEl = document.getElementById('exp-cat-breakdown');
   const grandTotal = monthExps.reduce((sum,e)=>sum+expNetAmount(e),0);
   const usedCats = EXP_CATEGORIES.filter(cat => monthExps.some(e => e.category === cat.key));
@@ -722,7 +717,7 @@ function renderExpenses() {
   } else {
     listEl.innerHTML = sortedExps.map(e => {
 
-      // Title: "Meat — Chicken" if type present, otherwise just category name
+      // Title: "Meat — Raw chicken" if type present, otherwise just category name
       let titleText = expCatLabel(e.category);
       if (e.expType && e.expType.trim()) titleText += ` — ${e.expType.trim()}`;
 
@@ -741,13 +736,16 @@ function renderExpenses() {
         dogLabel = dog ? `<span class="exp-tag">${dog.name}</span>` : '';
       }
 
-      // Sub-field lines — only render non-blank values
+      // Sub-field lines — location and kind shown as plain values (no label),
+      // reimbursement shown for Veterinary, note shown with its label.
       const lines = [];
-      if (e.where && e.where.trim())
-        lines.push(`<div class="exp-tx-field"><span class="exp-tx-label">Where</span><span class="exp-tx-val">${e.where}</span></div>`);
+      if (e.location && e.location.trim())
+        lines.push(`<div class="exp-tx-field"><span class="exp-tx-val">${e.location}</span></div>`);
+      // Support legacy 'where' field from old records
+      else if (e.where && e.where.trim())
+        lines.push(`<div class="exp-tx-field"><span class="exp-tx-val">${e.where}</span></div>`);
       if (e.kind && e.kind.trim())
-        lines.push(`<div class="exp-tx-field"><span class="exp-tx-label">Kind</span><span class="exp-tx-val">${e.kind}</span></div>`);
-      // Reimbursement only shows for Veterinary
+        lines.push(`<div class="exp-tx-field"><span class="exp-tx-val">${e.kind}</span></div>`);
       if (e.category === 'Veterinary' && parseFloat(e.reimbursement||0) > 0)
         lines.push(`<div class="exp-tx-field"><span class="exp-tx-label">Reimb.</span><span class="exp-tx-val exp-tx-credit">−${fmtMoney(e.reimbursement)}</span></div>`);
       if (e.notes && e.notes.trim())
@@ -784,7 +782,7 @@ function renderExpenses() {
 
 // Clear all sub-field inputs so stale values never bleed between categories
 function _clearExpenseSubfields() {
-  ['exp-field-type','exp-field-where','exp-field-kind','exp-field-reimb']
+  ['exp-field-type','exp-field-location','exp-field-kind','exp-field-reimb']
     .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
 }
 
@@ -809,32 +807,23 @@ function openEditExpense(id) {
   document.getElementById('exp-amount').value = (parseFloat(exp.amount)||0).toFixed(2);
   document.getElementById('exp-notes').value = exp.notes||'';
   document.getElementById('exp-category').value = exp.category;
-  // Always clear sub-fields before restoring to avoid stale cross-category data
   _clearExpenseSubfields();
   updateExpenseCategoryFields();
 
   setTimeout(() => {
-    // Restore only the sub-fields that belong to this category
-    const fields = (EXP_CAT_MAP[exp.category] || {}).fields || [];
-    if (fields.includes('type'))          document.getElementById('exp-field-type').value  = exp.expType || '';
-    if (fields.includes('where'))         document.getElementById('exp-field-where').value = exp.where   || '';
-    if (fields.includes('kind'))          document.getElementById('exp-field-kind').value  = exp.kind    || '';
-    if (fields.includes('reimbursement')) document.getElementById('exp-field-reimb').value = exp.reimbursement || '';
-
-    // Restore dog assignment
-    if (SPLIT_CATS.includes(exp.category)) {
-      const preChecked = exp.splitDogIds || activeDogs().map(d=>d.id);
-      document.querySelectorAll('.exp-split-check').forEach(cb => {
-        cb.checked = preChecked.includes(parseInt(cb.value));
-      });
-    } else {
-      const sharedEl = document.getElementById('exp-shared');
-      sharedEl.checked = !!(exp.shared || (exp.splitDogIds && exp.splitDogIds.length > 1));
-      toggleExpenseShared();
-      if (!sharedEl.checked && exp.dogId !== undefined) {
-        document.getElementById('exp-dog-select').value = exp.dogId;
-      }
+    // Restore sub-fields — support legacy 'where' field from old records
+    document.getElementById('exp-field-type').value     = exp.expType  || '';
+    document.getElementById('exp-field-location').value = exp.location || exp.where || '';
+    document.getElementById('exp-field-kind').value     = exp.kind     || '';
+    if (exp.category === 'Veterinary') {
+      document.getElementById('exp-field-reimb').value  = exp.reimbursement || '';
     }
+
+    // Restore dog split checkboxes
+    const preChecked = exp.splitDogIds || activeDogs().map(d=>d.id);
+    document.querySelectorAll('.exp-split-check').forEach(cb => {
+      cb.checked = preChecked.includes(parseInt(cb.value));
+    });
   }, 0);
 
   document.getElementById('expense-overlay').classList.add('show');
@@ -845,52 +834,21 @@ function closeExpenseOverlay() {
   expenseEditId = null;
 }
 
-// These categories use the per-dog checkbox split UI
-const SPLIT_CATS = ['Meat','Vegetables','Supplements'];
-
 function updateExpenseCategoryFields() {
   const cat = document.getElementById('exp-category').value;
-  const fields = (EXP_CAT_MAP[cat] || {}).fields || [];
   const dogs = activeDogs();
 
-  // Show/hide each sub-field section strictly based on the category's field list
-  ['type','where','kind','reimbursement'].forEach(f => {
-    const el = document.getElementById('exp-subfield-'+f);
-    if (el) el.style.display = fields.includes(f) ? 'block' : 'none';
-  });
+  // Reimbursement is only shown for Veterinary
+  const reimbEl = document.getElementById('exp-subfield-reimbursement');
+  if (reimbEl) reimbEl.style.display = (cat === 'Veterinary') ? 'block' : 'none';
 
-  // Dog assignment UI
-  const splitRow  = document.getElementById('exp-split-row');
-  const sharedRow = document.getElementById('exp-shared-row');
-  const dogRow    = document.getElementById('exp-dog-row');
-
-  if (SPLIT_CATS.includes(cat)) {
-    splitRow.style.display  = 'block';
-    sharedRow.style.display = 'none';
-    dogRow.style.display    = 'none';
-    document.getElementById('exp-split-dogs').innerHTML = dogs.map(d =>
-      `<label class="exp-split-label">
-        <input type="checkbox" class="exp-split-check" value="${d.id}" checked style="accent-color:var(--orange);width:auto">
-        ${d.name}
-      </label>`
-    ).join('');
-  } else {
-    splitRow.style.display  = 'none';
-    sharedRow.style.display = 'flex';
-    const sel = document.getElementById('exp-dog-select');
-    sel.innerHTML = dogs.map(d=>`<option value="${d.id}">${d.name}</option>`).join('');
-    if (state.activeDogId !== null) sel.value = state.activeDogId;
-    document.getElementById('exp-shared').checked = false;
-    toggleExpenseShared();
-  }
-}
-
-function toggleExpenseShared() {
-  const shared = document.getElementById('exp-shared').checked;
-  const cat    = document.getElementById('exp-category').value;
-  const dogRow = document.getElementById('exp-dog-row');
-  if (SPLIT_CATS.includes(cat)) { dogRow.style.display='none'; return; }
-  dogRow.style.display = shared ? 'none' : 'block';
+  // All categories use the split checkbox UI
+  document.getElementById('exp-split-dogs').innerHTML = dogs.map(d =>
+    `<label class="exp-split-label">
+      <input type="checkbox" class="exp-split-check" value="${d.id}" checked style="accent-color:var(--orange);width:auto">
+      ${d.name}
+    </label>`
+  ).join('');
 }
 
 function saveExpense() {
@@ -900,28 +858,22 @@ function saveExpense() {
   const notes    = document.getElementById('exp-notes').value.trim();
   if (!amount || amount <= 0 || !date) { showToast('Please enter amount and date'); return; }
 
-  // Read ONLY the sub-fields that are active for this category — never bleed others
-  const fields = (EXP_CAT_MAP[category] || {}).fields || [];
-  const expType       = fields.includes('type')          ? (document.getElementById('exp-field-type')?.value.trim()   || '') : '';
-  const where         = fields.includes('where')         ? (document.getElementById('exp-field-where')?.value.trim()  || '') : '';
-  const kind          = fields.includes('kind')          ? (document.getElementById('exp-field-kind')?.value.trim()   || '') : '';
-  const reimbursement = fields.includes('reimbursement') ? (parseFloat(document.getElementById('exp-field-reimb')?.value) || 0) : 0;
+  // All categories share: type, location, kind (all optional)
+  const expType       = document.getElementById('exp-field-type')?.value.trim()     || '';
+  const location      = document.getElementById('exp-field-location')?.value.trim() || '';
+  const kind          = document.getElementById('exp-field-kind')?.value.trim()      || '';
+  const reimbursement = (category === 'Veterinary')
+    ? (parseFloat(document.getElementById('exp-field-reimb')?.value) || 0)
+    : 0;
 
-  // Dog assignment
-  let splitDogIds = null, shared = false, dogId = null;
-  if (SPLIT_CATS.includes(category)) {
-    const checked = [...document.querySelectorAll('.exp-split-check:checked')].map(cb=>parseInt(cb.value));
-    if (checked.length === 0) { showToast('Select at least one dog'); return; }
-    splitDogIds = checked;
-  } else {
-    shared = document.getElementById('exp-shared').checked;
-    if (shared) { splitDogIds = activeDogs().map(d=>d.id); }
-    else { dogId = parseInt(document.getElementById('exp-dog-select').value); }
-  }
+  // All categories use the split checkbox UI
+  const checked = [...document.querySelectorAll('.exp-split-check:checked')].map(cb=>parseInt(cb.value));
+  if (checked.length === 0) { showToast('Select at least one dog'); return; }
+  const splitDogIds = checked;
 
   if (!state.expenses) state.expenses = [];
 
-  const record = { amount, date, category, notes, expType, where, kind, reimbursement, splitDogIds, shared, dogId };
+  const record = { amount, date, category, notes, expType, location, kind, reimbursement, splitDogIds, shared: false, dogId: null };
 
   if (expenseEditId) {
     const idx = state.expenses.findIndex(e=>e.id===expenseEditId);
@@ -958,7 +910,7 @@ function exportExpensesCSV() {
   const dogs = activeDogs();
   const expenses = state.expenses || [];
   if (expenses.length === 0) { showToast('No expenses to export'); return; }
-  const rows = [['Date','Category','Bill Amount','Reimbursement','Net Amount','Per Dog Share','Dog / Allocation','Type','Where','Kind','Notes']];
+  const rows = [['Date','Category','Bill Amount','Reimbursement','Net Amount','Per Dog Share','Dog / Allocation','Type','Location','Kind','Notes']];
   [...expenses].sort((a,b)=>a.date.localeCompare(b.date)).forEach(e => {
     const net   = expNetAmount(e);
     const reimb = (e.category === 'Veterinary') ? (parseFloat(e.reimbursement)||0) : 0;
@@ -972,7 +924,9 @@ function exportExpensesCSV() {
       const dog = state.dogs.find(d=>d.id===e.dogId);
       alloc = dog ? dog.name : 'Unknown'; perDogShare = net.toFixed(2);
     }
-    rows.push([e.date, e.category, (parseFloat(e.amount)||0).toFixed(2), reimb.toFixed(2), net.toFixed(2), perDogShare, alloc, e.expType||'', e.where||'', e.kind||'', e.notes||'']);
+    // Support legacy 'where' field
+    const locationVal = e.location || e.where || '';
+    rows.push([e.date, e.category, (parseFloat(e.amount)||0).toFixed(2), reimb.toFixed(2), net.toFixed(2), perDogShare, alloc, e.expType||'', locationVal, e.kind||'', e.notes||'']);
   });
   const csv  = rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
   const blob = new Blob([csv], {type:'text/csv'});

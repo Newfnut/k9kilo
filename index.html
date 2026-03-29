@@ -159,10 +159,13 @@
 <!-- ══ EXPENSES SCREEN ══ -->
 <div id="screen-expenses" class="scroll-area" style="display:none">
 
-  <!-- 1. Cost Per Dog -->
-  <div class="card">
-    <div class="card-title">Cost Per Dog</div>
-    <div id="exp-summary" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+  <!-- 1. Month navigator -->
+  <div class="card" style="padding:12px 18px">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <button id="exp-prev-btn" onclick="prevExpenseMonth()" style="background:none;border:none;color:var(--orange);font-size:24px;cursor:pointer;padding:4px 12px;border-radius:10px;line-height:1">‹</button>
+      <div id="exp-month-label" style="font-size:15px;font-weight:700;color:var(--text)"></div>
+      <button id="exp-next-btn" onclick="nextExpenseMonth()" style="background:none;border:none;color:var(--orange);font-size:24px;cursor:pointer;padding:4px 12px;border-radius:10px;line-height:1">›</button>
+    </div>
   </div>
 
   <!-- 2. Log Expense CTA -->
@@ -170,22 +173,19 @@
     <button class="btn" onclick="openAddExpense()">+ Log Expense</button>
   </div>
 
-  <!-- 3. Category Breakdown -->
+  <!-- 3. Cost Per Dog -->
   <div class="card" style="margin-top:12px">
+    <div class="card-title">Cost Per Dog</div>
+    <div id="exp-summary" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+  </div>
+
+  <!-- 4. Category Breakdown -->
+  <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px">
       <div class="card-title" style="margin:0">Category Breakdown</div>
       <div style="font-size:13px;font-weight:700;color:var(--text)">Total: <span id="exp-grand-total">$0.00</span></div>
     </div>
     <div id="exp-cat-breakdown"></div>
-  </div>
-
-  <!-- 4. Month navigator -->
-  <div class="card" style="padding:12px 18px">
-    <div style="display:flex;align-items:center;justify-content:space-between">
-      <button id="exp-prev-btn" onclick="prevExpenseMonth()" style="background:none;border:none;color:var(--orange);font-size:24px;cursor:pointer;padding:4px 12px;border-radius:10px;line-height:1">‹</button>
-      <div id="exp-month-label" style="font-size:15px;font-weight:700;color:var(--text)"></div>
-      <button id="exp-next-btn" onclick="nextExpenseMonth()" style="background:none;border:none;color:var(--orange);font-size:24px;cursor:pointer;padding:4px 12px;border-radius:10px;line-height:1">›</button>
-    </div>
   </div>
 
   <!-- 5. Transactions -->
@@ -337,29 +337,30 @@
       <div class="field-wrap">
         <p class="field-label">Category</p>
         <select id="exp-category" onchange="updateExpenseCategoryFields()">
-          <option value="Meat">🍖 Meat</option>
+          <option value="Meat">🥩 Meat</option>
           <option value="Vegetables">🥦 Vegetables</option>
           <option value="Supplements">🌿 Supplements</option>
           <option value="Pet Insurance">🛡️ Pet Insurance</option>
           <option value="Veterinary">🏥 Veterinary</option>
+          <option value="Chiropractor">🦴 Chiropractor</option>
         </select>
       </div>
 
-      <!-- Sub-field: Type (Meat only) -->
-      <div class="field-wrap" id="exp-subfield-type" style="display:none">
-        <p class="field-label">Type <span style="color:var(--text-muted);font-weight:400">(e.g. Raw, Dry, Wet)</span></p>
-        <input type="text" id="exp-field-type" placeholder="e.g. Raw chicken, Dry kibble">
+      <!-- Sub-field: Type (optional, all categories) -->
+      <div class="field-wrap" id="exp-subfield-type">
+        <p class="field-label">Type <span style="color:var(--text-muted);font-weight:400">(optional)</span></p>
+        <input type="text" id="exp-field-type" placeholder="e.g. Raw chicken, Dry kibble, Adjustment">
       </div>
 
-      <!-- Sub-field: Where (Meat + Vegetables) -->
-      <div class="field-wrap" id="exp-subfield-where" style="display:none">
-        <p class="field-label">Where <span style="color:var(--text-muted);font-weight:400">(store / source)</span></p>
-        <input type="text" id="exp-field-where" placeholder="e.g. Costco, Farm, PetSmart">
+      <!-- Sub-field: Location (optional, all categories) -->
+      <div class="field-wrap" id="exp-subfield-location">
+        <p class="field-label">Location <span style="color:var(--text-muted);font-weight:400">(optional)</span></p>
+        <input type="text" id="exp-field-location" placeholder="e.g. Costco, Vet clinic, PetSmart">
       </div>
 
-      <!-- Sub-field: Kind (all categories) -->
-      <div class="field-wrap" id="exp-subfield-kind" style="display:none">
-        <p class="field-label">Kind <span style="color:var(--text-muted);font-weight:400">(specific product or detail)</span></p>
+      <!-- Sub-field: Kind (optional, all categories) -->
+      <div class="field-wrap" id="exp-subfield-kind">
+        <p class="field-label">Kind <span style="color:var(--text-muted);font-weight:400">(optional)</span></p>
         <input type="text" id="exp-field-kind" placeholder="e.g. Fish oil, Royal Canin, Rabies shot">
       </div>
 
@@ -370,24 +371,10 @@
         <p style="font-size:11px;color:var(--text-muted);margin-top:5px">Net cost = Bill − Reimbursement</p>
       </div>
 
-      <!-- Dog assignment: split checkboxes (Meat, Vegetables, Supplements) -->
-      <div class="field-wrap" id="exp-split-row" style="display:none">
+      <!-- Dog assignment: split checkboxes (all categories) -->
+      <div class="field-wrap" id="exp-split-row">
         <p class="field-label">Split between</p>
         <div id="exp-split-dogs" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px"></div>
-      </div>
-
-      <!-- Dog assignment: shared toggle (Vet, Insurance) -->
-      <div class="field-wrap" id="exp-shared-row" style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text-soft);font-weight:500">
-          <input type="checkbox" id="exp-shared" onchange="toggleExpenseShared()" style="width:auto;accent-color:var(--orange)">
-          Shared across all dogs
-        </label>
-      </div>
-
-      <!-- Single dog picker -->
-      <div class="field-wrap" id="exp-dog-row">
-        <p class="field-label">Which dog?</p>
-        <select id="exp-dog-select"></select>
       </div>
 
       <!-- Notes -->
