@@ -76,7 +76,7 @@ function updateHeaderSub() {
   const dog=activeDog();
   if(!dog){ document.getElementById('header-sub').textContent=''; return; }
   const a=dogAge(dog.birthday,null,dog);
-  document.getElementById('header-sub').textContent=dog.name+' · '+dog.breed+(a?' · '+a:'');
+  document.getElementById('header-sub').innerHTML='<span style="color:var(--orange);-webkit-text-fill-color:var(--orange)">'+dog.name+'</span> · '+dog.breed+(a?' · '+a:'');
 }
 
 function switchTab(tab) {
@@ -193,20 +193,18 @@ function renderChart(s, target) {
   chartData = displayData;
   const W=280,H=90;
   const weights=displayData.map(e=>e.weight);
-  const allVals=target?[...weights,target]:weights;
+  const avg=weights.reduce((a,b)=>a+b,0)/weights.length;
+  const allVals=target?[...weights,target,avg]:[...weights,avg];
   const minV=Math.min(...allVals)-2, maxV=Math.max(...allVals)+2;
   const PAD=4;
   const px=i=>(displayData.length===1)?W/2:(i/(displayData.length-1))*(W-PAD*2)+PAD;
   const py=v=>H-((v-minV)/(maxV-minV))*(H-20)-10;
   const pathD=displayData.map((e,i)=>(i===0?'M':'L')+' '+px(i)+' '+py(e.weight)).join(' ');
   const areaD=pathD+' L '+px(displayData.length-1)+' '+H+' L '+px(0)+' '+H+' Z';
-  let targetLine='';
-  if(target){
-    const ty=py(target);
-    targetLine=`<line x1="${PAD}" y1="${ty}" x2="${W-PAD}" y2="${ty}" stroke="#E8621A" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.6"/>
-    <text x="${W-PAD-2}" y="${ty-4}" font-size="9" fill="#E8621A" text-anchor="end" font-family="-apple-system,sans-serif" opacity="0.8">ideal</text>`;
-    document.getElementById('goal-label').textContent='Ideal: '+cvt(target)+' '+unit;
-  } else {document.getElementById('goal-label').textContent='';}
+  const avgY=py(avg);
+  const targetLine=`<line x1="${PAD}" y1="${avgY}" x2="${W-PAD}" y2="${avgY}" stroke="#E8621A" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.6"/>
+    <text x="${W-PAD-2}" y="${avgY-4}" font-size="9" fill="#E8621A" text-anchor="end" font-family="-apple-system,sans-serif" opacity="0.8">avg</text>`;
+  document.getElementById('goal-label').textContent=target?'Ideal: '+cvt(target)+' '+unit:'';
 
   const DOT_R=3;
   const hitTargets=displayData.map((e,i)=>`<circle cx="${px(i)}" cy="${py(e.weight)}" r="16" fill="transparent" class="chart-hit" data-i="${i}" style="cursor:pointer"/>`).join('');

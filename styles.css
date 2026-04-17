@@ -191,6 +191,8 @@
   body.light-mode #auth-user-bar { background: rgba(232,98,26,0.07); border-bottom-color: rgba(232,98,26,0.15); }
   body.light-mode .unit-toggle { background: #EBEBF0; border-color: #C6C6C8; }
   body.light-mode .unit-btn { color: rgba(0,0,0,0.40); }
+
+  body::before {
     content: '';
     position: fixed;
     inset: 0;
