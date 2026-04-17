@@ -711,7 +711,7 @@ function renderExpenses() {
 
   // ── 3. Transactions
   const listEl = document.getElementById('exp-list');
-  const sortedExps = [...monthExps].sort((a,b)=>b.date.localeCompare(a.date));
+  const sortedExps = [...monthExps].sort((a,b)=>a.date.localeCompare(b.date));
   if (sortedExps.length === 0) {
     listEl.innerHTML = '<div class="empty">No expenses this month</div>';
   } else {
@@ -887,6 +887,7 @@ function saveExpense() {
   save();
   closeExpenseOverlay();
   renderExpenses();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function confirmDeleteExpense(id) {
@@ -963,8 +964,24 @@ function _authError(code) {
     'auth/too-many-requests':'Too many attempts. Try again later.'})[code] || 'An error occurred.';
 }
 
+// ── THEME ──
+function toggleDayNight() {
+  const isLight = document.body.classList.toggle('light-mode');
+  document.documentElement.style.background = isLight ? '#F2F2F7' : '#000000';
+  localStorage.setItem('k9kilo_theme', isLight ? 'light' : 'dark');
+  const btn = document.getElementById('theme-toggle-btn');
+  if (btn) btn.textContent = isLight ? '☀️' : '🌙';
+}
+
 // Init
 document.getElementById('input-date').value=new Date().toISOString().split('T')[0];
+const _savedTheme = localStorage.getItem('k9kilo_theme');
+if (_savedTheme === 'light') {
+  document.body.classList.add('light-mode');
+  document.documentElement.style.background = '#F2F2F7';
+  const _tb = document.getElementById('theme-toggle-btn');
+  if (_tb) _tb.textContent = '☀️';
+}
 ['confirm-overlay','editentry-overlay','adddog-overlay','expense-overlay'].forEach(id=>{
   document.getElementById(id).addEventListener('click',e=>{if(e.target===e.currentTarget)document.getElementById(id).classList.remove('show');});
 });

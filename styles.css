@@ -61,8 +61,136 @@
   .badge.down { color: #E8621A !important; -webkit-text-fill-color: #E8621A; }
   .badge.same { color: rgba(255,255,255,0.35) !important; -webkit-text-fill-color: rgba(255,255,255,0.35); }
 
-  /* Subtle background texture */
-  body::before {
+  /* ── LIGHT MODE ── */
+  body.light-mode {
+    color-scheme: light;
+    background: #F2F2F7 !important;
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000;
+    --bg: #F2F2F7;
+    --bg2: #FFFFFF;
+    --glass: #FFFFFF;
+    --glass-border: #C6C6C8;
+    --glass-strong: #F2F2F7;
+    --grouped-card: #FFFFFF;
+    --grouped-inset: #F2F2F7;
+    --separator: #C6C6C8;
+    --text: #000000;
+    --text-soft: rgba(0,0,0,0.65);
+    --text-muted: rgba(0,0,0,0.40);
+    --border: rgba(0,0,0,0.08);
+    --input-bg: rgba(0,0,0,0.05);
+    --orange-glow: rgba(232,98,26,0.20);
+    --orange-pale: rgba(232,98,26,0.10);
+    --red-pale: rgba(255,69,58,0.12);
+  }
+  body.light-mode::before {
+    background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(232,98,26,0.04) 0%, transparent 70%);
+  }
+  body.light-mode .card,
+  body.light-mode .modal,
+  body.light-mode .header,
+  body.light-mode .header-bar,
+  body.light-mode .tab-bar {
+    -webkit-text-fill-color: #000000;
+    color: #000000 !important;
+  }
+  body.light-mode .card { background: #FFFFFF; }
+  body.light-mode .header { background: #F2F2F7; }
+  body.light-mode .header-bar {
+    background: rgba(242,242,247,0.95);
+    border-bottom-color: #C6C6C8;
+  }
+  body.light-mode .tab-bar {
+    background: rgba(242,242,247,0.9);
+    border-bottom-color: #C6C6C8;
+  }
+  body.light-mode .tab { color: rgba(0,0,0,0.35); }
+  body.light-mode .modal { background: #FFFFFF; border-color: #C6C6C8; }
+  body.light-mode .card-title {
+    color: rgba(0,0,0,0.40) !important;
+    -webkit-text-fill-color: rgba(0,0,0,0.40);
+  }
+  body.light-mode .field-label {
+    color: rgba(0,0,0,0.65) !important;
+    -webkit-text-fill-color: rgba(0,0,0,0.65);
+  }
+  body.light-mode .cur-meta,
+  body.light-mode .history-meta,
+  body.light-mode .chart-label,
+  body.light-mode .stat-unit,
+  body.light-mode .archive-meta,
+  body.light-mode .empty,
+  body.light-mode .header-sub {
+    color: rgba(0,0,0,0.40) !important;
+    -webkit-text-fill-color: rgba(0,0,0,0.40);
+  }
+  body.light-mode .big-num,
+  body.light-mode .stat-val,
+  body.light-mode .history-weight,
+  body.light-mode .field-val,
+  body.light-mode .archive-name,
+  body.light-mode .header-appname,
+  body.light-mode .header-petname,
+  body.light-mode .modal-title {
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000;
+  }
+  body.light-mode .history-meta-primary {
+    color: rgba(0,0,0,0.65);
+    -webkit-text-fill-color: rgba(0,0,0,0.65);
+  }
+  body.light-mode .history-meta-secondary {
+    color: rgba(0,0,0,0.40);
+    -webkit-text-fill-color: rgba(0,0,0,0.40);
+  }
+  body.light-mode .modal-sub {
+    color: rgba(0,0,0,0.65);
+    -webkit-text-fill-color: rgba(0,0,0,0.65);
+  }
+  body.light-mode input[type=text],
+  body.light-mode input[type=number],
+  body.light-mode input[type=date],
+  body.light-mode select,
+  body.light-mode textarea {
+    background: #EBEBF0 !important;
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+    color-scheme: light;
+  }
+  body.light-mode ::placeholder {
+    color: rgba(0,0,0,0.25) !important;
+    -webkit-text-fill-color: rgba(0,0,0,0.25) !important;
+  }
+  body.light-mode .delete-btn { color: rgba(0,0,0,0.18); }
+  body.light-mode .chart-tooltip {
+    background: rgba(240,240,245,0.97);
+    border-color: rgba(232,98,26,0.4);
+  }
+  body.light-mode .chart-tooltip-val { color: #000; }
+  body.light-mode .chart-tooltip-date { color: rgba(0,0,0,0.5); }
+  body.light-mode .toast {
+    background: rgba(240,240,245,0.97);
+    color: #000;
+    border-color: #C6C6C8;
+  }
+  body.light-mode #auth-overlay { background: #F2F2F7; }
+  body.light-mode .auth-box { background: #FFFFFF; border-color: #C6C6C8; }
+  body.light-mode .exp-dog-card { background: #F2F2F7; border-color: #C6C6C8; }
+  body.light-mode .exp-item-icon { background: #F2F2F7; border-color: #C6C6C8; }
+  body.light-mode .exp-item-cat { color: #000000; -webkit-text-fill-color: #000000; }
+  body.light-mode .exp-item-date { color: rgba(0,0,0,0.40); -webkit-text-fill-color: rgba(0,0,0,0.40); }
+  body.light-mode .exp-item-amt { color: #000000 !important; -webkit-text-fill-color: #000000 !important; }
+  body.light-mode .exp-cat-name { color: rgba(0,0,0,0.65); }
+  body.light-mode .exp-cat-bar-wrap { background: rgba(0,0,0,0.08); }
+  body.light-mode .exp-cat-amt { color: #000000; }
+  body.light-mode .exp-split-label { background: #F2F2F7; border-color: #C6C6C8; color: rgba(0,0,0,0.65); }
+  body.light-mode .exp-tx-val { color: rgba(0,0,0,0.65); -webkit-text-fill-color: rgba(0,0,0,0.65); }
+  body.light-mode .exp-tx-label { color: rgba(0,0,0,0.40); -webkit-text-fill-color: rgba(0,0,0,0.40); }
+  body.light-mode .dog-pill { background: #FFFFFF; border-color: #C6C6C8; color: rgba(0,0,0,0.55); }
+  body.light-mode #auth-user-bar { background: rgba(232,98,26,0.07); border-bottom-color: rgba(232,98,26,0.15); }
+  body.light-mode .unit-toggle { background: #EBEBF0; border-color: #C6C6C8; }
+  body.light-mode .unit-btn { color: rgba(0,0,0,0.40); }
     content: '';
     position: fixed;
     inset: 0;

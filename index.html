@@ -64,12 +64,15 @@
   </div>
   <div class="header-bar">
     <div class="header-petname" id="header-sub">Loading...</div>
+    <div style="display:flex;align-items:center;gap:10px">
+    <button id="theme-toggle-btn" onclick="toggleDayNight()" style="background:none;border:none;font-size:18px;cursor:pointer;padding:4px;border-radius:8px;line-height:1;flex-shrink:0">🌙</button>
     <div class="unit-toggle">
       <button class="unit-btn active" id="btn-lbs" onclick="setUnit('lbs')">lbs</button>
       <button class="unit-btn" id="btn-kg" onclick="setUnit('kg')">kg</button>
+    <button class="unit-btn" id="btn-kg" onclick="setUnit('kg')">kg</button>
+    </div>
     </div>
   </div>
-</div>
 
 <!-- SCREENS -->
 <div id="screen-home" class="scroll-area">
@@ -321,6 +324,12 @@
 
     <div style="margin-top:10px">
 
+      <!-- Dog assignment: split checkboxes — shown first -->
+      <div class="field-wrap" id="exp-split-row">
+        <p class="field-label">Split between</p>
+        <div id="exp-split-dogs" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px"></div>
+      </div>
+
       <!-- Date + Amount -->
       <div class="two-col">
         <div class="field-wrap">
@@ -346,24 +355,6 @@
         </select>
       </div>
 
-      <!-- Sub-field: Type (optional, all categories) -->
-      <div class="field-wrap" id="exp-subfield-type">
-        <p class="field-label">Type <span style="color:var(--text-muted);font-weight:400">(optional)</span></p>
-        <input type="text" id="exp-field-type" placeholder="e.g. Raw chicken, Dry kibble, Adjustment">
-      </div>
-
-      <!-- Sub-field: Location (optional, all categories) -->
-      <div class="field-wrap" id="exp-subfield-location">
-        <p class="field-label">Location <span style="color:var(--text-muted);font-weight:400">(optional)</span></p>
-        <input type="text" id="exp-field-location" placeholder="e.g. Costco, Vet clinic, PetSmart">
-      </div>
-
-      <!-- Sub-field: Kind (optional, all categories) -->
-      <div class="field-wrap" id="exp-subfield-kind">
-        <p class="field-label">Kind <span style="color:var(--text-muted);font-weight:400">(optional)</span></p>
-        <input type="text" id="exp-field-kind" placeholder="e.g. Fish oil, Royal Canin, Rabies shot">
-      </div>
-
       <!-- Sub-field: Reimbursement (Veterinary only) -->
       <div class="field-wrap" id="exp-subfield-reimbursement" style="display:none">
         <p class="field-label">Insurance Reimbursement ($) <span style="color:var(--green);font-weight:400">credit</span></p>
@@ -371,10 +362,22 @@
         <p style="font-size:11px;color:var(--text-muted);margin-top:5px">Net cost = Bill − Reimbursement</p>
       </div>
 
-      <!-- Dog assignment: split checkboxes (all categories) -->
-      <div class="field-wrap" id="exp-split-row">
-        <p class="field-label">Split between</p>
-        <div id="exp-split-dogs" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px"></div>
+      <!-- Sub-field: Kind -->
+      <div class="field-wrap" id="exp-subfield-kind">
+        <p class="field-label">Kind</p>
+        <input type="text" id="exp-field-kind" placeholder="e.g. Fish oil, Royal Canin, Rabies shot">
+      </div>
+
+      <!-- Sub-field: Location -->
+      <div class="field-wrap" id="exp-subfield-location">
+        <p class="field-label">Location</p>
+        <input type="text" id="exp-field-location" placeholder="e.g. Costco, Vet clinic, PetSmart">
+      </div>
+
+      <!-- Sub-field: Type -->
+      <div class="field-wrap" id="exp-subfield-type">
+        <p class="field-label">Type</p>
+        <input type="text" id="exp-field-type" placeholder="e.g. Raw chicken, Dry kibble, Adjustment">
       </div>
 
       <!-- Notes -->
