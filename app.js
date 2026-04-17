@@ -106,7 +106,7 @@ function renderSwitcher() {
   const html=dogs.map(d=>
     `<button class="dog-pill ${d.id===state.activeDogId?'active':''}" onclick="selectDog(${d.id})">${d.name}</button>`
   ).join('');
-  ['dog-switcher','dog-switcher-profile'].forEach(id=>{
+  ['dog-switcher','dog-switcher-expenses','dog-switcher-profile'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.innerHTML=html;
   });

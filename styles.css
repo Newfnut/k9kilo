@@ -188,9 +188,32 @@
   body.light-mode .exp-tx-val { color: rgba(0,0,0,0.65); -webkit-text-fill-color: rgba(0,0,0,0.65); }
   body.light-mode .exp-tx-label { color: rgba(0,0,0,0.40); -webkit-text-fill-color: rgba(0,0,0,0.40); }
   body.light-mode .dog-pill { background: #FFFFFF; border-color: #C6C6C8; color: rgba(0,0,0,0.55); }
+  body.light-mode .dog-pill.active {
+    background: var(--orange);
+    border-color: var(--orange);
+    color: white !important;
+    -webkit-text-fill-color: white !important;
+    font-weight: 700;
+  }
   body.light-mode #auth-user-bar { background: rgba(232,98,26,0.07); border-bottom-color: rgba(232,98,26,0.15); }
   body.light-mode .unit-toggle { background: #EBEBF0; border-color: #C6C6C8; }
   body.light-mode .unit-btn { color: rgba(0,0,0,0.40); }
+
+  /* Soften orange buttons/pills in light mode */
+  body.light-mode .btn {
+    background: #D05518;
+    box-shadow: 0 4px 16px rgba(208,85,24,0.25);
+  }
+  body.light-mode .btn:active { background: #B84A14; }
+  body.light-mode .btn-subtle {
+    color: #C04E15;
+    border-color: rgba(192,78,21,0.35);
+  }
+  body.light-mode .unit-btn.active {
+    background: #D05518;
+    box-shadow: 0 2px 8px rgba(208,85,24,0.25);
+  }
+  body.light-mode .btn-danger { background: var(--red); box-shadow: 0 4px 16px rgba(255,69,58,0.25); }
 
   body::before {
     content: '';
@@ -518,7 +541,7 @@
   .restore-btn { font-size: 12px; color: var(--orange); font-weight: 700; background: var(--orange-pale); border: 1px solid rgba(232,98,26,0.3); border-radius: 8px; padding: 5px 10px; cursor: pointer; font-family: inherit; }
 
   /* DOG SWITCHER */
-  .dog-switcher { display: flex; gap: 8px; overflow-x: auto; padding: 0 14px; scrollbar-width: none; }
+  .dog-switcher { display: flex; gap: 8px; overflow-x: auto; padding: 10px 14px; scrollbar-width: none; }
   .dog-switcher::-webkit-scrollbar { display: none; }
   .dog-pill {
     flex-shrink: 0; padding: 6px 16px; border-radius: 20px;
@@ -529,7 +552,9 @@
   .dog-pill.active {
     outline: none; background: var(--orange);
     color: white; font-weight: 700;
+    border-color: var(--orange);
     box-shadow: 0 2px 8px var(--orange-glow);
+    -webkit-text-fill-color: white;
   }
 
   .empty { text-align: center; padding: 20px 0; font-size: 14px; color: var(--text-muted); }
