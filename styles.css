@@ -189,11 +189,12 @@
   body.light-mode .exp-tx-label { color: rgba(0,0,0,0.40); -webkit-text-fill-color: rgba(0,0,0,0.40); }
   body.light-mode .dog-pill { background: #FFFFFF; border-color: #C6C6C8; color: rgba(0,0,0,0.55); }
   body.light-mode .dog-pill.active {
-    background: var(--orange);
-    border-color: var(--orange);
+    background: #D05518;
+    border-color: #D05518;
     color: white !important;
     -webkit-text-fill-color: white !important;
     font-weight: 700;
+    box-shadow: 0 2px 8px rgba(208,85,24,0.35);
   }
   body.light-mode #auth-user-bar { background: rgba(232,98,26,0.07); border-bottom-color: rgba(232,98,26,0.15); }
   body.light-mode .unit-toggle { background: #EBEBF0; border-color: #C6C6C8; }
