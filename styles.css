@@ -202,17 +202,17 @@
 
   /* Soften orange buttons/pills in light mode */
   body.light-mode .btn {
-    background: #D05518;
-    box-shadow: 0 4px 16px rgba(208,85,24,0.25);
+    background: var(--orange);
+    box-shadow: 0 4px 16px var(--orange-glow);
   }
-  body.light-mode .btn:active { background: #B84A14; }
+  body.light-mode .btn:active { background: #c8541a; }
   body.light-mode .btn-subtle {
-    color: #C04E15;
-    border-color: rgba(192,78,21,0.35);
+    color: var(--orange);
+    border-color: rgba(232,98,26,0.4);
   }
   body.light-mode .unit-btn.active {
-    background: #D05518;
-    box-shadow: 0 2px 8px rgba(208,85,24,0.25);
+    background: var(--orange);
+    box-shadow: 0 2px 8px var(--orange-glow);
   }
   body.light-mode .btn-danger { background: var(--red); box-shadow: 0 4px 16px rgba(255,69,58,0.25); }
 
