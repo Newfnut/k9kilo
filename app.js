@@ -87,7 +87,7 @@ function switchTab(tab) {
     document.getElementById('profile-edit').style.display='none';
   }
   currentTab=tab;
-  ['home','log','expenses','profile'].forEach(t=>{
+  ['home','expenses','profile'].forEach(t=>{
     document.getElementById('screen-'+t).style.display=t===tab?'block':'none';
     document.getElementById('tab-'+t).classList.toggle('active',t===tab);
   });
@@ -97,7 +97,6 @@ function switchTab(tab) {
 function render() {
   updateHeaderSub();
   if(currentTab==='home') renderHome();
-  if(currentTab==='log') renderLog();
   if(currentTab==='expenses') renderExpenses();
   if(currentTab==='profile') renderProfile();
 }
@@ -107,7 +106,7 @@ function renderSwitcher() {
   const html=dogs.map(d=>
     `<button class="dog-pill ${d.id===state.activeDogId?'active':''}" onclick="selectDog(${d.id})">${d.name}</button>`
   ).join('');
-  ['dog-switcher','dog-switcher-log','dog-switcher-profile'].forEach(id=>{
+  ['dog-switcher','dog-switcher-profile'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.innerHTML=html;
   });
@@ -319,15 +318,19 @@ function renderHistoryList(dog) {
   }).join('');
 }
 
-function renderLog() {
-  renderSwitcher();
-  updateHeaderSub();
+function openLogOverlay() {
   const dog=activeDog();
+  document.getElementById('input-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('input-weight').value='';
+  document.getElementById('input-notes').value='';
+  document.getElementById('input-location').value='';
   document.getElementById('input-weight-label').textContent='Weight ('+unit+')';
   document.getElementById('input-weight').placeholder=unit==='lbs'?'62.5':'28.3';
-  if(dog&&dog.defaultLocation&&!document.getElementById('input-location').value)
-    document.getElementById('input-location').placeholder=dog.defaultLocation;
-  if(dog) renderHistoryList(dog);
+  if(dog&&dog.defaultLocation) document.getElementById('input-location').placeholder=dog.defaultLocation;
+  document.getElementById('logweight-overlay').classList.add('show');
+}
+function closeLogOverlay() {
+  document.getElementById('logweight-overlay').classList.remove('show');
 }
 
 function addEntry() {
@@ -342,7 +345,8 @@ function addEntry() {
   document.getElementById('input-notes').value='';
   document.getElementById('input-location').value='';
   showToast('Weight logged! 🐾');
-  renderLog();
+  closeLogOverlay();
+  renderHome();
 }
 
 function confirmDelete(date,weight,notes){
@@ -972,7 +976,6 @@ function toggleDayNight() {
 }
 
 // Init
-document.getElementById('input-date').value=new Date().toISOString().split('T')[0];
 const _savedTheme = localStorage.getItem('k9kilo_theme');
 if (_savedTheme === 'light') {
   document.body.classList.add('light-mode');
@@ -980,7 +983,7 @@ if (_savedTheme === 'light') {
   const _tb = document.getElementById('theme-toggle-btn');
   if (_tb) _tb.textContent = '☀️';
 }
-['confirm-overlay','editentry-overlay','adddog-overlay','expense-overlay'].forEach(id=>{
+['confirm-overlay','editentry-overlay','adddog-overlay','expense-overlay','logweight-overlay'].forEach(id=>{
   document.getElementById(id).addEventListener('click',e=>{if(e.target===e.currentTarget)document.getElementById(id).classList.remove('show');});
 });
 render();
