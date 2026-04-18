@@ -15,6 +15,8 @@ export function defaultState() {
     settings: {
       defaultUnit: 'lbs',
       theme: 'dark',
+      showAvgLine:   true,
+      showIdealLine: true,
     },
   };
 }
@@ -28,9 +30,11 @@ export function getState() { return _state; }
 export function setState(newState) {
   _state = newState;
   if (!_state.expenses)  _state.expenses  = [];
-  if (!_state.settings)  _state.settings  = { defaultUnit: 'lbs', theme: 'dark' };
+  if (!_state.settings)  _state.settings  = { defaultUnit: 'lbs', theme: 'dark', showAvgLine: true, showIdealLine: true };
   if (!_state.settings.defaultUnit) _state.settings.defaultUnit = 'lbs';
   if (!_state.settings.theme)       _state.settings.theme = 'dark';
+  if (_state.settings.showAvgLine   === undefined) _state.settings.showAvgLine   = true;
+  if (_state.settings.showIdealLine === undefined) _state.settings.showIdealLine = true;
 }
 
 // ── Persistence ──────────────────────────────

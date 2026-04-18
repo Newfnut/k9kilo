@@ -7,7 +7,7 @@
 import { loadLocal, setState, getState, getUnit, setUnit } from './state.js';
 import { fbOnAuthStateChanged, fbLoad, fbListen, fbStopListen, fbSignIn, fbSignUp, fbSignOut } from './firebase.js';
 import { render, switchTab } from './render.js';
-import { applyTheme, settingsSetUnit, settingsSetTheme, exportExpensesCSV } from './settings.js';
+import { applyTheme, settingsSetUnit, settingsSetTheme, settingsSetAvgLine, settingsSetIdealLine, exportExpensesCSV } from './settings.js';
 import { resetEditMode, toggleEdit } from './profile.js';
 import { prevExpenseMonth, nextExpenseMonth } from './expenses.js';
 import {
@@ -233,6 +233,10 @@ function _registerEvents() {
   document.getElementById('settings-btn-kg')?.addEventListener('click', () => settingsSetUnit('kg'));
   document.getElementById('settings-btn-dark')?.addEventListener('click', () => settingsSetTheme('dark'));
   document.getElementById('settings-btn-light')?.addEventListener('click', () => settingsSetTheme('light'));
+  document.getElementById('settings-btn-avg-on')?.addEventListener('click', () => settingsSetAvgLine(true));
+  document.getElementById('settings-btn-avg-off')?.addEventListener('click', () => settingsSetAvgLine(false));
+  document.getElementById('settings-btn-ideal-on')?.addEventListener('click', () => settingsSetIdealLine(true));
+  document.getElementById('settings-btn-ideal-off')?.addEventListener('click', () => settingsSetIdealLine(false));
   document.getElementById('settings-signout-btn')?.addEventListener('click', () => fbSignOut());
   document.getElementById('export-csv-btn')?.addEventListener('click', exportExpensesCSV);
 

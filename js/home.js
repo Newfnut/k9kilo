@@ -65,7 +65,8 @@ export function renderHome() {
   if (cEntries.length >= 2) {
     if (cardChart) cardChart.style.display = 'block';
     if (cardStats) cardStats.style.display = 'block';
-    renderChart(cEntries, dog.targetWeight);
+    const { showAvgLine, showIdealLine } = getState().settings;
+    renderChart(cEntries, dog.targetWeight, showAvgLine, showIdealLine);
 
     const weights = cEntries.map(e => e.weight);
     const avg     = weights.reduce((a, b) => a + b, 0) / weights.length;
@@ -88,13 +89,16 @@ export function renderHome() {
 // ── Chart ─────────────────────────────────────
 let _chartData = [];
 
-export function renderChart(displayData, target) {
+export function renderChart(displayData, target, showAvg = true, showIdeal = true) {
   _chartData = displayData;
   const W = 360, H = 100;
   const unit   = getUnit();
   const weights = displayData.map(e => e.weight);
   const avg     = weights.reduce((a, b) => a + b, 0) / weights.length;
-  const allVals = target ? [...weights, target, avg] : [...weights, avg];
+  // Only include reference lines in Y scale if they are visible
+  const allVals = [...weights];
+  if (showAvg)   allVals.push(avg);
+  if (showIdeal && target) allVals.push(target);
   const minV = Math.min(...allVals) - 2;
   const maxV = Math.max(...allVals) + 2;
   const PAD  = 6;
@@ -115,20 +119,20 @@ export function renderChart(displayData, target) {
   const avgY      = py(avg);
   const targetY   = target ? py(target) : null;
 
-  const avgLine = `
+  const avgLine = showAvg ? `
     <line x1="${PAD}" y1="${avgY}" x2="${W - PAD}" y2="${avgY}"
       stroke="#E8621A" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.55"/>
     <text x="${W - PAD - 2}" y="${avgY - 4}" font-size="9" fill="#E8621A"
-      text-anchor="end" font-family="-apple-system,sans-serif" opacity="0.75">avg</text>`;
+      text-anchor="end" font-family="-apple-system,sans-serif" opacity="0.75">avg</text>` : '';
 
-  const targetLine = target ? `
+  const targetLine = (showIdeal && target) ? `
     <line x1="${PAD}" y1="${targetY}" x2="${W - PAD}" y2="${targetY}"
       stroke="#34C759" stroke-width="1.5" stroke-dasharray="3,4" opacity="0.6"/>
     <text x="${W - PAD - 2}" y="${targetY - 4}" font-size="9" fill="#34C759"
       text-anchor="end" font-family="-apple-system,sans-serif" opacity="0.8">ideal</text>` : '';
 
   document.getElementById('goal-label').textContent =
-    target ? `Ideal: ${cvt(target)} ${unit}` : '';
+    (showIdeal && target) ? `Ideal: ${cvt(target)} ${unit}` : '';
 
   const DOT_R = 3;
   const hitTargets = displayData

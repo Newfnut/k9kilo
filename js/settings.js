@@ -12,7 +12,9 @@ import {
 export function renderSettings() {
   const state = getState();
   const unit  = getUnit();
-  const theme = state.settings?.theme || 'dark';
+  const theme        = state.settings?.theme        || 'dark';
+  const showAvgLine   = state.settings?.showAvgLine   !== false;
+  const showIdealLine = state.settings?.showIdealLine !== false;
 
   // Unit toggle
   document.getElementById('settings-btn-lbs')?.classList.toggle('active', unit === 'lbs');
@@ -21,6 +23,12 @@ export function renderSettings() {
   // Theme toggle
   document.getElementById('settings-btn-dark')?.classList.toggle('active', theme === 'dark');
   document.getElementById('settings-btn-light')?.classList.toggle('active', theme === 'light');
+
+  // Chart line toggles
+  document.getElementById('settings-btn-avg-on')?.classList.toggle('active', showAvgLine);
+  document.getElementById('settings-btn-avg-off')?.classList.toggle('active', !showAvgLine);
+  document.getElementById('settings-btn-ideal-on')?.classList.toggle('active', showIdealLine);
+  document.getElementById('settings-btn-ideal-off')?.classList.toggle('active', !showIdealLine);
 
   // Account email
   const emailEl = document.getElementById('settings-user-email');
@@ -50,6 +58,23 @@ export function settingsSetTheme(theme) {
   applyTheme(theme);
   window.__save?.();
   renderSettings();
+}
+
+// ── Chart line toggles ────────────────────────
+export function settingsSetAvgLine(on) {
+  const state = getState();
+  state.settings.showAvgLine = on;
+  window.__save?.();
+  renderSettings();
+  import('./render.js').then(r => r.render());
+}
+
+export function settingsSetIdealLine(on) {
+  const state = getState();
+  state.settings.showIdealLine = on;
+  window.__save?.();
+  renderSettings();
+  import('./render.js').then(r => r.render());
 }
 
 // ── CSV Export ────────────────────────────────
