@@ -77,10 +77,10 @@ export function settingsSetIdealLine(on) {
   import('./render.js').then(r => r.render());
 }
 
-// ── CSV Export ────────────────────────────────
+// ── CSV Export — Expenses ─────────────────────
 export function exportExpensesCSV() {
-  const state   = getState();
-  const dogs    = activeDogs();
+  const state    = getState();
+  const dogs     = activeDogs();
   const expenses = state.expenses || [];
 
   if (expenses.length === 0) {
@@ -88,12 +88,27 @@ export function exportExpensesCSV() {
     return;
   }
 
+  // Read optional date range filters
+  const fromVal = document.getElementById('export-date-from')?.value || '';
+  const toVal   = document.getElementById('export-date-to')?.value   || '';
+
+  const filtered = [...expenses].filter(e => {
+    if (fromVal && e.date < fromVal) return false;
+    if (toVal   && e.date > toVal)   return false;
+    return true;
+  }).sort((a, b) => a.date.localeCompare(b.date));
+
+  if (filtered.length === 0) {
+    window.__showToast?.('No expenses in that date range');
+    return;
+  }
+
   const rows = [[
     'Date', 'Category', 'Bill Amount', 'Reimbursement', 'Net Amount',
-    'Per Dog Share', 'Dog / Allocation', 'Type', 'Location', 'Kind', 'Notes',
+    'Per Dog Share', 'Dog / Allocation', 'Type', 'Location', 'Notes',
   ]];
 
-  [...expenses].sort((a, b) => a.date.localeCompare(b.date)).forEach(e => {
+  filtered.forEach(e => {
     const net   = expNetAmount(e);
     const reimb = e.category === 'Veterinary' ? (parseFloat(e.reimbursement) || 0) : 0;
 
@@ -112,7 +127,10 @@ export function exportExpensesCSV() {
       perDogShare = net.toFixed(2);
     }
 
+    // Type merges expType + legacy kind
+    const typeVal = e.expType || e.kind || '';
     const locationVal = e.location || e.where || '';
+
     rows.push([
       e.date,
       e.category,
@@ -121,22 +139,63 @@ export function exportExpensesCSV() {
       net.toFixed(2),
       perDogShare,
       alloc,
-      e.expType  || '',
+      typeVal,
       locationVal,
-      e.kind     || '',
+      e.notes || '',
+    ]);
+  });
+
+  const suffix = (fromVal || toVal)
+    ? `_${fromVal || 'start'}_to_${toVal || 'end'}`
+    : '_all';
+
+  _downloadCSV(rows, `k9kilo-expenses${suffix}.csv`);
+  window.__showToast?.('Expenses exported!');
+}
+
+// ── CSV Export — Weight History ───────────────
+export function exportWeightsCSV() {
+  const { activeDog, sorted } = _getStateHelpers();
+  const dog = activeDog();
+  if (!dog) { window.__showToast?.('No dog selected'); return; }
+
+  const entries = sorted(dog);
+  if (entries.length === 0) {
+    window.__showToast?.('No weight entries to export');
+    return;
+  }
+
+  const rows = [['Date', 'Weight (lbs)', 'Weight (kg)', 'Location', 'Notes']];
+  entries.forEach(e => {
+    rows.push([
+      e.date,
+      parseFloat(e.weight).toFixed(1),
+      (e.weight * 0.453592).toFixed(1),
+      e.location || '',
       e.notes    || '',
     ]);
   });
 
+  _downloadCSV(rows, `k9kilo-weights-${dog.name.toLowerCase().replace(/\s+/g, '-')}.csv`);
+  window.__showToast?.(`${dog.name}'s weights exported!`);
+}
+
+// ── CSV helper ────────────────────────────────
+function _downloadCSV(rows, filename) {
   const csv  = rows.map(r =>
     r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')
   ).join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
-  a.href     = url;
-  a.download = 'k9kilo-expenses.csv';
-  a.click();
+  a.href = url; a.download = filename; a.click();
   URL.revokeObjectURL(url);
-  window.__showToast?.('CSV downloaded!');
+}
+
+function _getStateHelpers() {
+  // Lazy import pattern — these are needed at call time not module load time
+  return {
+    activeDog: () => getState().dogs.find(d => d.id === getState().activeDogId),
+    sorted: (dog) => [...dog.entries].sort((a, b) => a.date.localeCompare(b.date)),
+  };
 }

@@ -121,8 +121,10 @@ export function renderExpenses() {
 
   listEl.innerHTML = sorted.map(e => {
     const meta  = expCatMeta(e.category);
+    // Merge expType + legacy kind into one display value
+    const typeVal = (e.expType || e.kind || '').trim();
     let titleText = meta.label;
-    if (e.expType && e.expType.trim()) titleText += ` — ${e.expType.trim()}`;
+    if (typeVal) titleText += ` — ${typeVal}`;
 
     // Dog tag(s)
     let dogLabel = '';
@@ -149,8 +151,6 @@ export function renderExpenses() {
     const loc = e.location || e.where || '';
     if (loc.trim())
       lines.push(`<div class="exp-tx-field"><span class="exp-tx-val">${escHtml(loc)}</span></div>`);
-    if (e.kind && e.kind.trim())
-      lines.push(`<div class="exp-tx-field"><span class="exp-tx-val">${escHtml(e.kind)}</span></div>`);
     if (e.category === 'Veterinary' && parseFloat(e.reimbursement || 0) > 0)
       lines.push(`<div class="exp-tx-field"><span class="exp-tx-label">Reimb.</span><span class="exp-tx-val exp-tx-credit">−${fmtMoney(e.reimbursement)}</span></div>`);
     if (e.notes && e.notes.trim())

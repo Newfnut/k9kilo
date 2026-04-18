@@ -7,7 +7,7 @@
 import { loadLocal, setState, getState, getUnit, setUnit } from './state.js';
 import { fbOnAuthStateChanged, fbLoad, fbListen, fbStopListen, fbSignIn, fbSignUp, fbSignOut } from './firebase.js';
 import { render, switchTab } from './render.js';
-import { applyTheme, settingsSetUnit, settingsSetTheme, settingsSetAvgLine, settingsSetIdealLine, exportExpensesCSV } from './settings.js';
+import { applyTheme, settingsSetUnit, settingsSetTheme, settingsSetAvgLine, settingsSetIdealLine, exportExpensesCSV, exportWeightsCSV } from './settings.js';
 import { resetEditMode, toggleEdit } from './profile.js';
 import { prevExpenseMonth, nextExpenseMonth } from './expenses.js';
 import {
@@ -239,6 +239,7 @@ function _registerEvents() {
   document.getElementById('settings-btn-ideal-off')?.addEventListener('click', () => settingsSetIdealLine(false));
   document.getElementById('settings-signout-btn')?.addEventListener('click', () => fbSignOut());
   document.getElementById('export-csv-btn')?.addEventListener('click', exportExpensesCSV);
+  document.getElementById('export-weights-btn')?.addEventListener('click', exportWeightsCSV);
 
   // Auth
   document.getElementById('auth-tab-login')?.addEventListener('click', () => authSwitchTab('login'));

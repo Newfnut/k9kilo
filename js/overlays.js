@@ -264,7 +264,7 @@ export function restoreDog(id)      { _restoreDog(id); }
 let _expenseEditId = null;
 
 function _clearExpenseSubfields() {
-  ['exp-field-type', 'exp-field-location', 'exp-field-kind', 'exp-field-reimb'].forEach(id => {
+  ['exp-field-type', 'exp-field-location', 'exp-field-reimb'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -314,9 +314,9 @@ export function openEditExpense(id) {
 
   // Restore sub-fields after DOM settles
   setTimeout(() => {
-    document.getElementById('exp-field-type').value     = exp.expType   || '';
-    document.getElementById('exp-field-location').value = exp.location  || exp.where || '';
-    document.getElementById('exp-field-kind').value     = exp.kind      || '';
+    // Type field merges expType + kind — prefer expType, fall back to kind for legacy records
+    document.getElementById('exp-field-type').value     = exp.expType || exp.kind || '';
+    document.getElementById('exp-field-location').value = exp.location || exp.where || '';
     if (exp.category === 'Veterinary')
       document.getElementById('exp-field-reimb').value  = exp.reimbursement || '';
 
@@ -343,7 +343,6 @@ export function saveExpense() {
 
   const expType       = document.getElementById('exp-field-type')?.value.trim()     || '';
   const location      = document.getElementById('exp-field-location')?.value.trim() || '';
-  const kind          = document.getElementById('exp-field-kind')?.value.trim()      || '';
   const reimbursement = category === 'Veterinary'
     ? (parseFloat(document.getElementById('exp-field-reimb')?.value) || 0)
     : 0;
@@ -354,7 +353,7 @@ export function saveExpense() {
 
   const record = {
     amount, date, category, notes,
-    expType, location, kind, reimbursement,
+    expType, location, kind: '', reimbursement,
     splitDogIds: checked,
     shared: false,
     dogId: null,
