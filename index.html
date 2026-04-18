@@ -9,25 +9,20 @@
 <meta name="color-scheme" content="dark">
 <meta name="supported-color-schemes" content="dark">
 <link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.json">
 <title>K9 Kilo</title>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<!-- AUTH USER BAR -->
-<div id="auth-user-bar">
-  <span>Signed in as <span id="auth-user-email"></span></span>
-  <button class="auth-signout-btn" onclick="authSignOut()">Sign out</button>
-</div>
-
-<!-- AUTH OVERLAY -->
+<!-- ══ AUTH OVERLAY ════════════════════════════ -->
 <div id="auth-overlay">
   <div class="auth-box">
     <div class="auth-title">K9 <span style="color:var(--orange)">Kilo</span></div>
     <div class="auth-subtitle">Sign in to sync your pet data across devices</div>
     <div class="auth-tabs">
-      <button class="auth-tab active" id="auth-tab-login" onclick="authSwitchTab('login')">Sign In</button>
-      <button class="auth-tab" id="auth-tab-signup" onclick="authSwitchTab('signup')">Sign Up</button>
+      <button class="auth-tab active" id="auth-tab-login">Sign In</button>
+      <button class="auth-tab"        id="auth-tab-signup">Sign Up</button>
     </div>
     <div class="field-wrap">
       <p class="field-label">Email</p>
@@ -38,101 +33,308 @@
       <input type="password" id="auth-password" placeholder="Password" autocomplete="current-password">
     </div>
     <div class="auth-error" id="auth-error"></div>
-    <button class="btn" style="margin-top:12px" onclick="authSubmit()" id="auth-submit-btn">Sign In</button>
+    <button class="btn" style="margin-top:12px" id="auth-submit-btn">Sign In</button>
   </div>
 </div>
 
-<!-- APP ROOT -->
+<!-- ══ APP ROOT ═════════════════════════════════ -->
 <div id="app-root" style="display:none">
 
-<div class="header">
-  <div class="header-banner">
-    <img class="header-banner-img" id="header-logo" src="K9kilo_Logo.png" alt="K9 Kilo">
-    <div class="header-banner-glow"></div>
-    <div class="header-overlay">
-      <div>
-        <div class="header-appname">K9 <span>Kilo</span></div>
-        <div class="header-sub">Pet Weight Tracker</div>
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-banner">
+      <img class="header-banner-img" src="K9kilo_Logo.png" alt="K9 Kilo">
+      <div class="header-banner-glow"></div>
+      <div class="header-overlay">
+        <div>
+          <div class="header-appname">K9 <span>Kilo</span></div>
+          <div class="header-sub" id="header-sub">Pet Weight Tracker</div>
+        </div>
       </div>
     </div>
-  </div>
-  <!-- TAB BAR -->
-  <div class="tab-bar">
-    <button class="tab active" id="tab-home" onclick="switchTab('home')"><span class="tab-icon">⚖️</span>Dashboard</button>
-    <button class="tab" id="tab-expenses" onclick="switchTab('expenses')"><span class="tab-icon">💰</span>Expenses</button>
-    <button class="tab" id="tab-profile" onclick="switchTab('profile')"><span class="tab-icon">🐕</span>Profile</button>
-  </div>
-  <div class="header-bar">
-    <div class="header-petname" id="header-sub">Loading...</div>
-    <div style="display:flex;align-items:center;gap:10px">
-    <button id="theme-toggle-btn" onclick="toggleDayNight()" style="background:none;border:none;font-size:18px;cursor:pointer;padding:4px;border-radius:8px;line-height:1;flex-shrink:0">🌙</button>
-    <div class="unit-toggle">
-      <button class="unit-btn active" id="btn-lbs" onclick="setUnit('lbs')">lbs</button>
-      <button class="unit-btn" id="btn-kg" onclick="setUnit('kg')">kg</button>
-    </div>
+
+    <!-- TAB BAR -->
+    <div class="tab-bar">
+      <button class="tab active" id="tab-home">
+        <span class="tab-icon">⚖️</span>Dashboard
+      </button>
+      <button class="tab" id="tab-expenses">
+        <span class="tab-icon">💰</span>Expenses
+      </button>
+      <button class="tab" id="tab-profile">
+        <span class="tab-icon">🐕</span>Profile
+      </button>
+      <button class="tab" id="tab-settings">
+        <span class="tab-icon">⚙️</span>Settings
+      </button>
     </div>
   </div>
 
-<!-- SCREENS -->
-<div id="screen-home" class="scroll-area">
-  <div style="padding: 0">
+  <!-- ══ DASHBOARD SCREEN ══ -->
+  <div id="screen-home" class="scroll-area">
     <div class="dog-switcher" id="dog-switcher"></div>
-  </div>
 
-  <div style="padding: 0 14px 12px">
-    <button class="btn" onclick="openLogOverlay()">⚖️ Log Weight</button>
-  </div>
-
-  <div class="card" id="card-current">
-    <div class="card-title">Current Weight</div>
-    <div class="card-accent">
-      <div>
-        <span class="big-num" id="cur-weight">—</span>
-        <span class="unit-sm" id="cur-unit"> lbs</span>
-        <span class="badge" id="cur-badge" style="display:none"></span>
-      </div>
-      <div class="cur-meta" id="cur-meta"></div>
+    <div style="padding:0 14px 12px">
+      <button class="btn" id="log-weight-btn">⚖️ Log Weight</button>
     </div>
-  </div>
 
-  <div class="card" id="card-chart" style="display:none">
-    <div class="goal-row">
-      <div class="card-title" style="margin:0">Progress</div>
-      <div class="goal-tag" id="goal-label"></div>
-    </div>
-    <div class="chart-wrap">
-      <svg class="chart" id="sparkline" viewBox="0 0 280 90"></svg>
-      <div id="chart-tooltip" class="chart-tooltip" style="display:none;position:absolute">
-        <div class="chart-tooltip-val" id="tt-val"></div>
-        <div class="chart-tooltip-date" id="tt-date"></div>
+    <!-- Current Weight -->
+    <div class="card" id="card-current" style="display:none">
+      <div class="card-title">Current Weight</div>
+      <div class="card-accent">
+        <div>
+          <span class="big-num" id="cur-weight">—</span><span class="unit-sm" id="cur-unit"> lbs</span>
+          <span class="badge" id="cur-badge" style="display:none"></span>
+        </div>
+        <div class="cur-meta" id="cur-meta"></div>
       </div>
     </div>
-    <div class="chart-labels">
-      <span class="chart-label" id="chart-start"></span>
-      <span class="chart-label" id="chart-end"></span>
+
+    <!-- Progress Chart -->
+    <div class="card card-chart-container" id="card-chart" style="display:none">
+      <div class="goal-row">
+        <div class="card-title" style="margin:0">Progress</div>
+        <div class="goal-tag" id="goal-label"></div>
+      </div>
+      <div class="chart-wrap">
+        <svg class="chart" id="sparkline" viewBox="0 0 360 100" preserveAspectRatio="none"></svg>
+        <div id="chart-tooltip" class="chart-tooltip" style="display:none">
+          <div class="chart-tooltip-val" id="tt-val"></div>
+          <div class="chart-tooltip-date" id="tt-date"></div>
+        </div>
+      </div>
+      <div class="chart-labels">
+        <span class="chart-label" id="chart-start"></span>
+        <span class="chart-label" id="chart-end"></span>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="card" id="card-stats" style="display:none">
+      <div class="stats-row">
+        <div class="stat">
+          <div class="card-title">Heaviest</div>
+          <div><span class="stat-val" id="stat-max">—</span> <span class="stat-unit" id="stat-max-u">lbs</span></div>
+        </div>
+        <div class="stat">
+          <div class="card-title">Lightest</div>
+          <div><span class="stat-val" id="stat-min">—</span> <span class="stat-unit" id="stat-min-u">lbs</span></div>
+        </div>
+        <div class="stat">
+          <div class="card-title">Avg Weight</div>
+          <div><span class="stat-val" id="stat-avg">—</span> <span class="stat-unit" id="stat-avg-u">lbs</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div class="card" id="card-history" style="display:none">
+      <div class="card-title">History</div>
+      <div id="history-list"><div class="empty">No entries yet</div></div>
+    </div>
+  </div><!-- /screen-home -->
+
+  <!-- ══ EXPENSES SCREEN ══ -->
+  <div id="screen-expenses" class="scroll-area" style="display:none">
+    <div class="dog-switcher" id="dog-switcher-expenses"></div>
+
+    <!-- Month navigator -->
+    <div class="card" style="padding:12px 18px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <button id="exp-prev-btn" class="month-nav-btn">‹</button>
+        <div id="exp-month-label" style="font-size:15px;font-weight:700;color:var(--text)"></div>
+        <button id="exp-next-btn" class="month-nav-btn">›</button>
+      </div>
+    </div>
+
+    <div style="padding:0 14px">
+      <button class="btn" id="log-expense-btn">💰 Log Expense</button>
+    </div>
+
+    <!-- Cost Per Dog -->
+    <div class="card" style="margin-top:12px">
+      <div class="card-title">Cost Per Dog</div>
+      <div id="exp-summary" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+    </div>
+
+    <!-- Category Breakdown -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px">
+        <div class="card-title" style="margin:0">Category Breakdown</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">
+          Total: <span id="exp-grand-total">$0.00</span>
+        </div>
+      </div>
+      <div id="exp-cat-breakdown"></div>
+    </div>
+
+    <!-- Transactions -->
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px">Transactions</div>
+      <div id="exp-list"></div>
+    </div>
+
+    <div style="height:16px"></div>
+  </div><!-- /screen-expenses -->
+
+  <!-- ══ PROFILE SCREEN ══ -->
+  <div id="screen-profile" class="scroll-area" style="display:none">
+    <div class="dog-switcher" id="dog-switcher-profile"></div>
+
+    <!-- Pet Info card -->
+    <div class="card">
+      <div class="profile-header">
+        <div class="card-title" style="margin:0">Pet Info</div>
+        <button class="edit-btn" id="edit-btn">Edit</button>
+      </div>
+      <div id="profile-view"></div>
+
+      <!-- Edit form (hidden by default) -->
+      <div id="profile-edit" style="display:none">
+        <div class="field-wrap">
+          <p class="field-label">Name</p>
+          <input type="text" id="edit-name">
+        </div>
+        <div class="field-wrap">
+          <p class="field-label">Type / Breed</p>
+          <select id="edit-breed">
+            <option>Golden Retriever</option>
+            <option>Newfoundland</option>
+            <option>Other</option>
+          </select>
+          <input type="text" id="edit-breed-other" placeholder="Enter breed or pet type (e.g. cat, llama…)" style="margin-top:8px;display:none">
+        </div>
+        <div class="two-col">
+          <div class="field-wrap">
+            <p class="field-label">Birthday</p>
+            <input type="date" id="edit-birthday">
+          </div>
+          <div class="field-wrap">
+            <p class="field-label" id="edit-goal-label">Ideal Weight (lbs)</p>
+            <input type="number" id="edit-goal" step="0.1" min="0">
+          </div>
+        </div>
+        <div class="field-wrap">
+          <p class="field-label">Default Location / Scale</p>
+          <input type="text" id="edit-location" placeholder="e.g. Vet office">
+        </div>
+        <div class="field-wrap">
+          <p class="field-label">Chart &amp; Stats Start Date</p>
+          <p class="field-hint">Only show data from this date forward. Useful for adult dogs — excludes puppy readings from stats.</p>
+          <input type="date" id="edit-chart-start">
+        </div>
+        <div class="field-wrap" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--separator)">
+          <p class="field-label">Date They Left <span style="color:var(--text-muted);font-weight:400">(optional)</span></p>
+          <input type="date" id="archive-date-input">
+        </div>
+        <button class="btn btn-glass" style="margin-top:8px" id="archive-btn">Move to Remembered</button>
+      </div>
+    </div>
+
+    <!-- Add a Pet -->
+    <div class="card">
+      <div class="profile-header">
+        <div class="card-title" style="margin:0">Add a Pet</div>
+      </div>
+      <button class="btn btn-subtle" id="add-dog-btn">+ Add Pet</button>
+    </div>
+
+    <!-- Remembered -->
+    <div class="card">
+      <div class="card-title">Remembered</div>
+      <div id="archive-list"><div class="empty">No remembered pets</div></div>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.5">
+        Pets no longer with you — passed away or rehomed. Their records stay safe here.
+      </p>
+    </div>
+
+    <div style="padding:0 14px 8px">
+      <button class="btn btn-danger" id="delete-pet-btn">Delete This Pet</button>
+    </div>
+  </div><!-- /screen-profile -->
+
+  <!-- ══ SETTINGS SCREEN ══ -->
+  <div id="screen-settings" class="scroll-area" style="display:none">
+
+    <!-- Display -->
+    <div class="card">
+      <div class="card-title">Display</div>
+
+      <div class="settings-row">
+        <div>
+          <div class="settings-label">Default Unit</div>
+          <div class="settings-sub">Used across all screens and history</div>
+        </div>
+        <div class="unit-toggle">
+          <button class="unit-btn active" id="settings-btn-lbs">lbs</button>
+          <button class="unit-btn"        id="settings-btn-kg">kg</button>
+        </div>
+      </div>
+
+      <div class="settings-row" style="margin-top:14px">
+        <div>
+          <div class="settings-label">Appearance</div>
+          <div class="settings-sub">Dark or light theme</div>
+        </div>
+        <div class="unit-toggle">
+          <button class="unit-btn active" id="settings-btn-dark">🌙 Dark</button>
+          <button class="unit-btn"        id="settings-btn-light">☀️ Light</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Account -->
+    <div class="card">
+      <div class="card-title">Account</div>
+      <div class="settings-row" style="margin-bottom:14px">
+        <div class="settings-label">Signed in as</div>
+        <div class="settings-sub" id="settings-user-email" style="text-align:right;flex:1"></div>
+      </div>
+      <button class="btn btn-glass" id="settings-signout-btn">Sign Out</button>
+    </div>
+
+    <!-- Data -->
+    <div class="card">
+      <div class="card-title">Data</div>
+      <button class="btn btn-subtle" id="export-csv-btn">⬇ Export All Expenses (CSV)</button>
+    </div>
+
+    <!-- About -->
+    <div class="card">
+      <div class="card-title">About</div>
+      <div class="settings-row">
+        <div class="settings-label">K9 Kilo</div>
+        <div class="settings-sub">v2.0</div>
+      </div>
+    </div>
+
+    <div style="height:16px"></div>
+  </div><!-- /screen-settings -->
+
+  <div class="toast" id="toast"></div>
+
+  <!-- ══ CONFIRM OVERLAY ══ -->
+  <div class="overlay" id="confirm-overlay">
+    <div class="modal">
+      <div class="modal-title" id="confirm-title">Delete?</div>
+      <div class="modal-sub"   id="confirm-sub">This cannot be undone.</div>
+      <div class="modal-btns">
+        <button class="btn btn-glass" id="confirm-cancel-btn">Cancel</button>
+        <button class="btn btn-danger" id="confirm-ok">Delete</button>
+      </div>
     </div>
   </div>
 
-  <div class="card" id="card-stats" style="display:none">
-    <div class="stats-row">
-      <div class="stat"><div class="card-title">Heaviest</div><div><span class="stat-val" id="stat-max">—</span> <span class="stat-unit" id="stat-max-u">lbs</span></div></div>
-      <div class="stat"><div class="card-title">Lightest</div><div><span class="stat-val" id="stat-min">—</span> <span class="stat-unit" id="stat-min-u">lbs</span></div></div>
-      <div class="stat"><div class="card-title">Avg Weight</div><div><span class="stat-val" id="stat-count">—</span> <span class="stat-unit" id="stat-count-u">lbs</span></div></div>
-    </div>
-  </div>
-
-  <div class="card" id="card-history" style="display:none">
-    <div class="card-title">History</div>
-    <div id="history-list"><div class="empty">No entries yet</div></div>
-  </div>
-</div>
-
-<!-- LOG WEIGHT OVERLAY -->
-<div class="overlay" id="logweight-overlay">
-  <div class="modal">
-    <div class="modal-title">Log Weight</div>
-    <div style="margin-top:10px">
-      <div class="two-col">
+  <!-- ══ LOG WEIGHT OVERLAY ══ -->
+  <div class="overlay" id="logweight-overlay">
+    <div class="modal">
+      <div class="modal-title">Log Weight</div>
+      <!-- Unit quick-flip -->
+      <div class="overlay-unit-row">
+        <button class="unit-btn active" id="btn-lbs-overlay">lbs</button>
+        <button class="unit-btn"        id="btn-kg-overlay">kg</button>
+      </div>
+      <div class="two-col" style="margin-top:10px">
         <div class="field-wrap">
           <p class="field-label">Date</p>
           <input type="date" id="input-date">
@@ -146,263 +348,161 @@
         <p class="field-label">Location / Scale</p>
         <div style="display:flex;gap:8px">
           <input type="text" id="input-location" placeholder="e.g. Home scale, Vet office" style="flex:1">
-          <button type="button" onclick="getGPS('input-location')" id="gps-btn" style="flex-shrink:0;padding:0 14px;border-radius:12px;border:1px solid var(--glass-border);background:var(--input-bg);font-size:18px;cursor:pointer">📍</button>
+          <button type="button" id="gps-btn" class="gps-btn" data-gps-target="input-location">📍</button>
         </div>
       </div>
       <div class="field-wrap">
         <p class="field-label">Notes <span style="color:var(--text-muted);font-weight:400">(optional)</span></p>
-        <textarea id="input-notes" placeholder="e.g. After breakfast, post-surgery checkup..."></textarea>
+        <textarea id="input-notes" placeholder="e.g. After breakfast, post-surgery checkup…"></textarea>
+      </div>
+      <div class="modal-btns">
+        <button class="btn btn-glass" id="log-cancel-btn">Cancel</button>
+        <button class="btn"           id="log-save-btn">Save Entry</button>
       </div>
     </div>
-    <div class="modal-btns">
-      <button class="btn btn-glass" onclick="closeLogOverlay()">Cancel</button>
-      <button class="btn" onclick="addEntry()">Save Entry</button>
-    </div>
-  </div>
-</div>
-
-<!-- ══ EXPENSES SCREEN ══ -->
-<div id="screen-expenses" class="scroll-area" style="display:none">
-
-  <div style="padding: 12px 0 8px">
-    <div class="dog-switcher" id="dog-switcher-expenses"></div>
   </div>
 
-  <!-- 1. Month navigator -->
-  <div class="card" style="padding:12px 18px">
-    <div style="display:flex;align-items:center;justify-content:space-between">
-      <button id="exp-prev-btn" onclick="prevExpenseMonth()" style="background:none;border:none;color:var(--orange);font-size:24px;cursor:pointer;padding:4px 12px;border-radius:10px;line-height:1">‹</button>
-      <div id="exp-month-label" style="font-size:15px;font-weight:700;color:var(--text)"></div>
-      <button id="exp-next-btn" onclick="nextExpenseMonth()" style="background:none;border:none;color:var(--orange);font-size:24px;cursor:pointer;padding:4px 12px;border-radius:10px;line-height:1">›</button>
-    </div>
-  </div>
-
-  <!-- 2. Log Expense CTA -->
-  <div style="padding:0 14px">
-    <button class="btn" onclick="openAddExpense()">💰 Log Expense</button>
-  </div>
-
-  <!-- 3. Cost Per Dog -->
-  <div class="card" style="margin-top:12px">
-    <div class="card-title">Cost Per Dog</div>
-    <div id="exp-summary" style="display:flex;flex-wrap:wrap;gap:8px"></div>
-  </div>
-
-  <!-- 4. Category Breakdown -->
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px">
-      <div class="card-title" style="margin:0">Category Breakdown</div>
-      <div style="font-size:13px;font-weight:700;color:var(--text)">Total: <span id="exp-grand-total">$0.00</span></div>
-    </div>
-    <div id="exp-cat-breakdown"></div>
-  </div>
-
-  <!-- 5. Transactions -->
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div class="card-title" style="margin:0">Transactions</div>
-      <button onclick="exportExpensesCSV()" style="background:none;border:1px solid rgba(232,98,26,0.4);color:var(--orange);font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;cursor:pointer;font-family:inherit">⬇ CSV</button>
-    </div>
-    <div id="exp-list"></div>
-  </div>
-
-  <div style="height:16px"></div>
-</div>
-
-<div id="screen-profile" class="scroll-area" style="display:none">
-  <div style="padding: 12px 0 8px">
-    <div class="dog-switcher" id="dog-switcher-profile"></div>
-  </div>
-  <div class="card">
-    <div class="profile-header">
-      <div class="card-title" style="margin:0">Pet Info</div>
-      <button class="edit-btn" id="edit-btn" onclick="toggleEdit()">Edit</button>
-    </div>
-    <div id="profile-view"></div>
-    <div id="profile-edit" style="display:none">
-      <div class="field-wrap"><p class="field-label">Name</p><input type="text" id="edit-name"></div>
-      <div class="field-wrap">
-        <p class="field-label">Type / Breed</p>
-        <select id="edit-breed" onchange="toggleBreedOther('edit-breed','edit-breed-other')">
-          <option>Golden Retriever</option>
-          <option>Newfoundland</option>
-          <option>Other</option>
-        </select>
-        <input type="text" id="edit-breed-other" placeholder="Enter breed or pet type (e.g. cat, llama...)" style="margin-top:8px;display:none">
+  <!-- ══ EDIT ENTRY OVERLAY ══ -->
+  <div class="overlay" id="editentry-overlay">
+    <div class="modal">
+      <div class="modal-title">Edit Entry</div>
+      <div class="overlay-unit-row">
+        <button class="unit-btn active" id="ee-btn-lbs">lbs</button>
+        <button class="unit-btn"        id="ee-btn-kg">kg</button>
       </div>
-      <div class="two-col">
-        <div class="field-wrap"><p class="field-label">Birthday</p><input type="date" id="edit-birthday"></div>
-        <div class="field-wrap"><p class="field-label" id="edit-goal-label">Ideal Weight (lbs)</p><input type="number" id="edit-goal" step="0.1" min="0"></div>
-      </div>
-      <div class="field-wrap"><p class="field-label">Default Location / Scale</p><input type="text" id="edit-location" placeholder="e.g. Vet office"></div>
-      <div class="field-wrap" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--separator)">
-        <p class="field-label">Date They Left <span style="color:var(--text-muted);font-weight:400">(optional — stops age at this date)</span></p>
-        <input type="date" id="archive-date-input">
-      </div>
-      <button class="btn btn-glass" style="margin-top:8px" onclick="archiveCurrentDog()">Move to Remembered</button>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="profile-header">
-      <div class="card-title" style="margin:0">Add a Pet</div>
-    </div>
-    <button class="btn btn-subtle" onclick="addNewDog()">+ Add Pet</button>
-  </div>
-
-  <div class="card">
-    <div class="card-title">Remembered</div>
-    <div id="archive-list"><div class="empty">No remembered pets</div></div>
-    <p style="font-size:12px;color:var(--text-muted);margin-top:10px;line-height:1.5">Pets no longer with you — passed away or rehomed. Their records stay safe here.</p>
-  </div>
-
-  <div style="padding: 0 14px; display:flex; flex-direction:column; gap:8px;">
-    <button class="btn btn-danger" onclick="confirmDeletePet()">Delete This Pet</button>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<!-- CONFIRM MODAL -->
-<div class="overlay" id="confirm-overlay">
-  <div class="modal">
-    <div class="modal-title" id="confirm-title">Delete entry?</div>
-    <div class="modal-sub" id="confirm-sub">This cannot be undone.</div>
-    <div class="modal-btns">
-      <button class="btn btn-glass" onclick="closeConfirm()">Cancel</button>
-      <button class="btn btn-danger" id="confirm-ok">Delete</button>
-    </div>
-  </div>
-</div>
-
-<!-- EDIT ENTRY MODAL -->
-<div class="overlay" id="editentry-overlay">
-  <div class="modal">
-    <div class="modal-title">Edit Entry</div>
-    <div style="margin-top:4px">
-      <div class="two-col">
-        <div class="field-wrap"><p class="field-label">Date</p><input type="date" id="ee-date"></div>
-        <div class="field-wrap"><p class="field-label" id="ee-weight-label">Weight (lbs)</p><input type="number" id="ee-weight" step="0.1" min="0"></div>
+      <div class="two-col" style="margin-top:10px">
+        <div class="field-wrap">
+          <p class="field-label">Date</p>
+          <input type="date" id="ee-date">
+        </div>
+        <div class="field-wrap">
+          <p class="field-label" id="ee-weight-label">Weight (lbs)</p>
+          <input type="number" id="ee-weight" step="0.1" min="0">
+        </div>
       </div>
       <div class="field-wrap">
         <p class="field-label">Location / Scale</p>
         <div style="display:flex;gap:8px">
           <input type="text" id="ee-location" placeholder="e.g. Vet office" style="flex:1">
-          <button type="button" onclick="getGPS('ee-location')" style="flex-shrink:0;padding:0 14px;border-radius:12px;border:1px solid var(--glass-border);background:var(--input-bg);font-size:18px;cursor:pointer">📍</button>
+          <button type="button" id="ee-gps-btn" class="gps-btn" data-gps-target="ee-location">📍</button>
         </div>
       </div>
       <div class="field-wrap">
         <p class="field-label">Notes <span style="color:var(--text-muted);font-weight:400">(optional)</span></p>
-        <textarea id="ee-notes" placeholder="e.g. After breakfast..."></textarea>
+        <textarea id="ee-notes" placeholder="e.g. After breakfast…"></textarea>
       </div>
-    </div>
-    <div class="modal-btns">
-      <button class="btn btn-glass" onclick="closeEditEntry()">Cancel</button>
-      <button class="btn" onclick="saveEditEntry()">Save</button>
+      <div class="modal-btns">
+        <button class="btn btn-glass" id="ee-cancel-btn">Cancel</button>
+        <button class="btn"           id="ee-save-btn">Save</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- ADD PET MODAL -->
-<div class="overlay" id="adddog-overlay">
-  <div class="modal">
-    <div class="modal-title">New Pet</div>
-    <div class="field-wrap" style="margin-top:4px"><p class="field-label">Name</p><input type="text" id="newdog-name" placeholder="Pet's name"></div>
-    <div class="field-wrap">
-      <p class="field-label">Type / Breed</p>
-      <select id="newdog-breed" onchange="toggleBreedOther('newdog-breed','newdog-breed-other')">
-        <option>Golden Retriever</option><option>Newfoundland</option><option>Other</option>
-      </select>
-      <input type="text" id="newdog-breed-other" placeholder="Enter breed or pet type (e.g. cat, llama...)" style="margin-top:8px;display:none">
-    </div>
-    <div class="field-wrap"><p class="field-label">Birthday</p><input type="date" id="newdog-birthday"></div>
-    <div class="modal-btns" style="margin-top:4px">
-      <button class="btn btn-glass" onclick="closeAddDog()">Cancel</button>
-      <button class="btn" onclick="saveNewDog()">Add Pet</button>
-    </div>
-  </div>
-</div>
-
-<!-- EXPENSE MODAL -->
-<div class="overlay" id="expense-overlay">
-  <div class="modal" style="max-height:88vh;overflow-y:auto">
-    <div class="modal-title" id="exp-overlay-title">Log Expense</div>
-
-    <div style="margin-top:10px">
-
-      <!-- Dog assignment: split checkboxes — shown first -->
-      <div class="field-wrap" id="exp-split-row">
-        <p class="field-label">Split between</p>
-        <div id="exp-split-dogs" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px"></div>
+  <!-- ══ ADD PET OVERLAY ══ -->
+  <div class="overlay" id="adddog-overlay">
+    <div class="modal">
+      <div class="modal-title">New Pet</div>
+      <div class="field-wrap" style="margin-top:4px">
+        <p class="field-label">Name</p>
+        <input type="text" id="newdog-name" placeholder="Pet's name">
       </div>
-
-      <!-- Date + Amount -->
-      <div class="two-col">
-        <div class="field-wrap">
-          <p class="field-label">Date</p>
-          <input type="date" id="exp-date">
-        </div>
-        <div class="field-wrap">
-          <p class="field-label">Bill Amount ($)</p>
-          <input type="number" id="exp-amount" placeholder="0.00" step="0.01" min="0">
-        </div>
-      </div>
-
-      <!-- Category -->
       <div class="field-wrap">
-        <p class="field-label">Category</p>
-        <select id="exp-category" onchange="updateExpenseCategoryFields()">
-          <option value="Meat">🥩 Meat</option>
-          <option value="Vegetables">🥦 Vegetables</option>
-          <option value="Supplements">🌿 Supplements</option>
-          <option value="Pet Insurance">🛡️ Pet Insurance</option>
-          <option value="Veterinary">🏥 Veterinary</option>
-          <option value="Chiropractor">🦴 Chiropractor</option>
+        <p class="field-label">Type / Breed</p>
+        <select id="newdog-breed">
+          <option>Golden Retriever</option>
+          <option>Newfoundland</option>
+          <option>Other</option>
         </select>
+        <input type="text" id="newdog-breed-other" placeholder="Enter breed or pet type (e.g. cat, llama…)" style="margin-top:8px;display:none">
       </div>
-
-      <!-- Sub-field: Reimbursement (Veterinary only) -->
-      <div class="field-wrap" id="exp-subfield-reimbursement" style="display:none">
-        <p class="field-label">Insurance Reimbursement ($) <span style="color:var(--green);font-weight:400">credit</span></p>
-        <input type="number" id="exp-field-reimb" placeholder="0.00" step="0.01" min="0">
-        <p style="font-size:11px;color:var(--text-muted);margin-top:5px">Net cost = Bill − Reimbursement</p>
-      </div>
-
-      <!-- Sub-field: Kind -->
-      <div class="field-wrap" id="exp-subfield-kind">
-        <p class="field-label">Kind</p>
-        <input type="text" id="exp-field-kind" placeholder="e.g. Fish oil, Royal Canin, Rabies shot">
-      </div>
-
-      <!-- Sub-field: Location -->
-      <div class="field-wrap" id="exp-subfield-location">
-        <p class="field-label">Location</p>
-        <input type="text" id="exp-field-location" placeholder="e.g. Costco, Vet clinic, PetSmart">
-      </div>
-
-      <!-- Sub-field: Type -->
-      <div class="field-wrap" id="exp-subfield-type">
-        <p class="field-label">Type</p>
-        <input type="text" id="exp-field-type" placeholder="e.g. Raw chicken, Dry kibble, Adjustment">
-      </div>
-
-      <!-- Notes -->
       <div class="field-wrap">
-        <p class="field-label">Notes <span style="color:var(--text-muted);font-weight:400">(optional)</span></p>
-        <input type="text" id="exp-notes" placeholder="e.g. Annual checkup, 30lb bag">
+        <p class="field-label">Birthday</p>
+        <input type="date" id="newdog-birthday">
       </div>
-    </div>
-
-    <div class="modal-btns">
-      <button class="btn btn-glass" onclick="closeExpenseOverlay()">Cancel</button>
-      <button class="btn" onclick="saveExpense()">Save</button>
+      <div class="modal-btns" style="margin-top:4px">
+        <button class="btn btn-glass" id="adddog-cancel-btn">Cancel</button>
+        <button class="btn"           id="adddog-save-btn">Add Pet</button>
+      </div>
     </div>
   </div>
-</div>
 
-</div><!-- end app-root -->
+  <!-- ══ EXPENSE OVERLAY ══ -->
+  <div class="overlay" id="expense-overlay">
+    <div class="modal" style="max-height:88vh;overflow-y:auto">
+      <div class="modal-title" id="exp-overlay-title">Log Expense</div>
+      <div style="margin-top:10px">
 
-<script src="app.js"></script>
-<script type="module" src="firebase.js"></script>
+        <!-- Split between -->
+        <div class="field-wrap">
+          <p class="field-label">Split between</p>
+          <div id="exp-split-dogs" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px"></div>
+        </div>
+
+        <!-- Date + Amount -->
+        <div class="two-col">
+          <div class="field-wrap">
+            <p class="field-label">Date</p>
+            <input type="date" id="exp-date">
+          </div>
+          <div class="field-wrap">
+            <p class="field-label">Bill Amount ($)</p>
+            <input type="number" id="exp-amount" placeholder="0.00" step="0.01" min="0">
+          </div>
+        </div>
+
+        <!-- Category -->
+        <div class="field-wrap">
+          <p class="field-label">Category</p>
+          <select id="exp-category">
+            <option value="Meat">🥩 Meat</option>
+            <option value="Vegetables">🥦 Vegetables</option>
+            <option value="Supplements">🌿 Supplements</option>
+            <option value="Pet Insurance">🛡️ Pet Insurance</option>
+            <option value="Veterinary">🏥 Veterinary</option>
+            <option value="Chiropractor">🦴 Chiropractor</option>
+          </select>
+        </div>
+
+        <!-- Reimbursement (Veterinary only) -->
+        <div class="field-wrap" id="exp-subfield-reimbursement" style="display:none">
+          <p class="field-label">Insurance Reimbursement ($) <span style="color:var(--green);font-weight:400">credit</span></p>
+          <input type="number" id="exp-field-reimb" placeholder="0.00" step="0.01" min="0">
+          <p class="field-hint">Net cost = Bill − Reimbursement</p>
+        </div>
+
+        <!-- Kind -->
+        <div class="field-wrap">
+          <p class="field-label">Kind</p>
+          <input type="text" id="exp-field-kind" placeholder="e.g. Fish oil, Royal Canin, Rabies shot">
+        </div>
+
+        <!-- Location -->
+        <div class="field-wrap">
+          <p class="field-label">Location</p>
+          <input type="text" id="exp-field-location" placeholder="e.g. Costco, Vet clinic, PetSmart">
+        </div>
+
+        <!-- Type -->
+        <div class="field-wrap">
+          <p class="field-label">Type</p>
+          <input type="text" id="exp-field-type" placeholder="e.g. Raw chicken, Dry kibble, Adjustment">
+        </div>
+
+        <!-- Notes -->
+        <div class="field-wrap">
+          <p class="field-label">Notes <span style="color:var(--text-muted);font-weight:400">(optional)</span></p>
+          <input type="text" id="exp-notes" placeholder="e.g. Annual checkup, 30lb bag">
+        </div>
+      </div>
+      <div class="modal-btns">
+        <button class="btn btn-glass" id="exp-cancel-btn">Cancel</button>
+        <button class="btn"           id="exp-save-btn">Save</button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app-root -->
+
+<script type="module" src="js/main.js"></script>
 </body>
 </html>
