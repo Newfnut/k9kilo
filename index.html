@@ -318,7 +318,28 @@
     <!-- Data -->
     <div class="card">
       <div class="card-title">Data</div>
-      <button class="btn btn-subtle" id="export-csv-btn">⬇ Export All Expenses (CSV)</button>
+
+      <!-- Expense export with date range -->
+      <div class="settings-label" style="margin-bottom:6px">Export Expenses</div>
+      <div class="two-col" style="margin-bottom:8px">
+        <div class="field-wrap" style="margin-bottom:0">
+          <p class="field-label">From</p>
+          <input type="date" id="export-date-from">
+        </div>
+        <div class="field-wrap" style="margin-bottom:0">
+          <p class="field-label">To</p>
+          <input type="date" id="export-date-to">
+        </div>
+      </div>
+      <p class="field-hint" style="margin-bottom:10px">Leave blank to export all dates</p>
+      <button class="btn btn-subtle" id="export-csv-btn">⬇ Export Expenses (CSV)</button>
+
+      <!-- Weight history export -->
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--separator)">
+        <div class="settings-label" style="margin-bottom:4px">Export Weight History</div>
+        <div class="settings-sub" style="margin-bottom:10px">All entries for the current dog</div>
+        <button class="btn btn-subtle" id="export-weights-btn">⬇ Export Weights (CSV)</button>
+      </div>
     </div>
 
     <!-- About -->
@@ -492,22 +513,16 @@
           <p class="field-hint">Net cost = Bill − Reimbursement</p>
         </div>
 
-        <!-- Kind -->
+        <!-- Type (merged Kind + Type) -->
         <div class="field-wrap">
-          <p class="field-label">Kind</p>
-          <input type="text" id="exp-field-kind" placeholder="e.g. Fish oil, Royal Canin, Rabies shot">
+          <p class="field-label">Type</p>
+          <input type="text" id="exp-field-type" placeholder="e.g. Raw chicken, Fish oil, Rabies shot, Adjustment">
         </div>
 
         <!-- Location -->
         <div class="field-wrap">
           <p class="field-label">Location</p>
           <input type="text" id="exp-field-location" placeholder="e.g. Costco, Vet clinic, PetSmart">
-        </div>
-
-        <!-- Type -->
-        <div class="field-wrap">
-          <p class="field-label">Type</p>
-          <input type="text" id="exp-field-type" placeholder="e.g. Raw chicken, Dry kibble, Adjustment">
         </div>
 
         <!-- Notes -->
