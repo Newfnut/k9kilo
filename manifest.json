@@ -1,7 +1,7 @@
 {
   "name": "K9 Kilo",
   "short_name": "K9 Kilo",
-  "start_url": "/",
+  "start_url": "/k9kilo/",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#E8621A",
