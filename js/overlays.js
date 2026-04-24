@@ -411,19 +411,22 @@ export function getGPS(targetId) {
   navigator.geolocation.getCurrentPosition(async pos => {
     const { latitude: lat, longitude: lon } = pos.coords;
     try {
-      const queries = [
-        `[out:json][timeout:10];node(around:200,${lat},${lon})[amenity=veterinary];out 1;`,
-        `[out:json][timeout:10];node(around:200,${lat},${lon})[shop=pet];out 1;`,
-      ];
+      // Query vets first (broader tag net), then pet shops — vet hit always wins
+      const vetQuery  = `[out:json][timeout:10];(node(around:200,${lat},${lon})[amenity=veterinary];node(around:200,${lat},${lon})[amenity=clinic][veterinary=yes];way(around:200,${lat},${lon})[amenity=veterinary];);out 1;`;
+      const petQuery  = `[out:json][timeout:10];(node(around:200,${lat},${lon})[shop=pet];node(around:200,${lat},${lon})[shop=petstore];);out 1;`;
+
       let found = null;
-      for (const q of queries) {
+      for (const q of [vetQuery, petQuery]) {
         const r = await fetch('https://overpass-api.de/api/interpreter', {
           method: 'POST', body: 'data=' + encodeURIComponent(q),
         });
         const j = await r.json();
         if (j.elements?.length > 0) {
           const el = j.elements[0];
+          // Use name if available; fall back to addr:full; last resort use category label
           found = el.tags?.name || el.tags?.['addr:full'] || null;
+          // A vet node was found — stop here even if unnamed, so pet shop can't override
+          if (q === vetQuery) break;
           if (found) break;
         }
       }
