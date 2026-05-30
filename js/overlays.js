@@ -43,8 +43,15 @@ export function showToast(msg) {
 function openOverlay(id)  { document.getElementById(id)?.classList.add('show'); }
 function closeOverlay(id) { document.getElementById(id)?.classList.remove('show'); }
 
-export function closeLogOverlay()     { closeOverlay('logweight-overlay'); }
-export function closeEditEntry()      { closeOverlay('editentry-overlay'); _editEntryIdx = null; }
+export function closeLogOverlay() {
+  closeOverlay('logweight-overlay');
+  setUnit(getState().settings?.defaultUnit || 'lbs');
+}
+export function closeEditEntry() {
+  closeOverlay('editentry-overlay');
+  _editEntryIdx = null;
+  setUnit(getState().settings?.defaultUnit || 'lbs');
+}
 export function closeAddDog()         { closeOverlay('adddog-overlay'); }
 export function closeExpenseOverlay() { closeOverlay('expense-overlay'); _expenseEditId = null; }
 export function closeConfirm()        {
@@ -105,7 +112,8 @@ export function addEntry() {
     notes:    document.getElementById('input-notes').value.trim(),
   });
   save();
-  closeLogOverlay();
+  closeOverlay('logweight-overlay');
+  setUnit(getState().settings?.defaultUnit || 'lbs');
   render();
   showToast('Weight logged! 🐾');
 }
@@ -148,10 +156,11 @@ export function saveEditEntry() {
     location: document.getElementById('ee-location').value.trim(),
     notes:    document.getElementById('ee-notes').value.trim(),
   };
-  save();
-  closeEditEntry();
+save();
+  closeOverlay('logweight-overlay');
+  setUnit(getState().settings?.defaultUnit || 'lbs');
   render();
-  showToast('Entry updated ✓');
+  showToast('Weight logged! 🐾');
 }
 
 // ── Delete entry ──────────────────────────────
