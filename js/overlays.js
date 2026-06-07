@@ -286,13 +286,21 @@ export function updateExpenseCategoryFields() {
   const reimbEl = document.getElementById('exp-subfield-reimbursement');
   if (reimbEl) reimbEl.style.display = cat === 'Veterinary' ? 'block' : 'none';
 
-  document.getElementById('exp-split-dogs').innerHTML = dogs.map(d =>
-    `<label class="exp-split-label">
-      <input type="checkbox" class="exp-split-check" value="${d.id}" checked
+  // Preserve whatever the user has already checked; only rebuild if no checkboxes exist yet
+  const existing = [...document.querySelectorAll('.exp-split-check')];
+  const alreadyBuilt = existing.length > 0;
+  const currentlyChecked = alreadyBuilt
+    ? new Set(existing.filter(cb => cb.checked).map(cb => parseInt(cb.value)))
+    : null;
+
+  document.getElementById('exp-split-dogs').innerHTML = dogs.map(d => {
+    const checked = currentlyChecked ? currentlyChecked.has(d.id) : true;
+    return `<label class="exp-split-label">
+      <input type="checkbox" class="exp-split-check" value="${d.id}" ${checked ? 'checked' : ''}
         style="accent-color:var(--orange);width:auto">
       ${d.name}
-    </label>`
-  ).join('');
+    </label>`;
+  }).join('');
 }
 
 export function openAddExpense() {
