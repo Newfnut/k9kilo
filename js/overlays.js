@@ -79,21 +79,22 @@ export function overlaySetUnit(u) {
 
 // ── Log Weight overlay ────────────────────────
 export function openLogOverlay() {
-  const dog  = activeDog();
-  const unit = getUnit();
+  const dog = activeDog();
 
-  document.getElementById('input-date').value   = todayStr();
-  document.getElementById('input-weight').value = '';
-  document.getElementById('input-notes').value  = '';
+  document.getElementById('input-date').value    = todayStr();
+  document.getElementById('input-weight').value  = '';
+  document.getElementById('input-notes').value   = '';
   document.getElementById('input-location').value = '';
 
-  document.getElementById('input-weight-label').textContent = `Weight (${unit})`;
-  document.getElementById('input-weight').placeholder = unit === 'lbs' ? '62.5' : '28.3';
+  // Always open in kg — display default (lbs) is restored on close/save
+  setUnit('kg');
+  document.getElementById('input-weight-label').textContent = 'Weight (kg)';
+  document.getElementById('input-weight').placeholder = '28.3';
   if (dog?.defaultLocation)
     document.getElementById('input-location').placeholder = dog.defaultLocation;
 
-  document.getElementById('btn-lbs-overlay')?.classList.toggle('active', unit === 'lbs');
-  document.getElementById('btn-kg-overlay')?.classList.toggle('active', unit === 'kg');
+  document.getElementById('btn-lbs-overlay')?.classList.toggle('active', false);
+  document.getElementById('btn-kg-overlay')?.classList.toggle('active', true);
 
   openOverlay('logweight-overlay');
 }
@@ -127,16 +128,17 @@ export function openEditEntry(idx) {
   if (!e) return;
 
   _editEntryIdx = idx;
-  const unit = getUnit();
 
+  // Always open in kg — display default (lbs) is restored on close/save
+  setUnit('kg');
   document.getElementById('ee-date').value     = e.date;
   document.getElementById('ee-weight').value   = cvt(e.weight);
   document.getElementById('ee-location').value = e.location || '';
   document.getElementById('ee-notes').value    = e.notes    || '';
-  document.getElementById('ee-weight-label').textContent = `Weight (${unit})`;
+  document.getElementById('ee-weight-label').textContent = 'Weight (kg)';
 
-  document.getElementById('ee-btn-lbs')?.classList.toggle('active', unit === 'lbs');
-  document.getElementById('ee-btn-kg')?.classList.toggle('active', unit === 'kg');
+  document.getElementById('ee-btn-lbs')?.classList.toggle('active', false);
+  document.getElementById('ee-btn-kg')?.classList.toggle('active', true);
 
   openOverlay('editentry-overlay');
 }
@@ -157,10 +159,11 @@ export function saveEditEntry() {
     notes:    document.getElementById('ee-notes').value.trim(),
   };
 save();
-  closeOverlay('logweight-overlay');
+  closeOverlay('editentry-overlay');
+  _editEntryIdx = null;
   setUnit(getState().settings?.defaultUnit || 'lbs');
   render();
-  showToast('Weight logged! 🐾');
+  showToast('Entry updated ✓');
 }
 
 // ── Delete entry ──────────────────────────────

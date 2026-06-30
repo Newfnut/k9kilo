@@ -131,7 +131,10 @@ export function fmtDateLong(d) {
 }
 
 export function todayStr() {
-  return new Date().toISOString().split('T')[0];
+  const d = new Date();
+  return d.getFullYear() + '-'
+    + String(d.getMonth() + 1).padStart(2, '0') + '-'
+    + String(d.getDate()).padStart(2, '0');
 }
 
 // ── Age calculation ───────────────────────────
@@ -187,9 +190,10 @@ export function expenseEffectiveAmountForDog(exp, dogId) {
   if (exp.splitDogIds && exp.splitDogIds.length > 0) {
     return exp.splitDogIds.includes(dogId) ? net / exp.splitDogIds.length : 0;
   }
-  // Legacy: shared
+  // Legacy: shared — use total dog count (including archived) so archiving
+  // a dog doesn't retroactively increase the per-dog share of old expenses.
   if (exp.shared) {
-    const n = activeDogs().length || 1;
+    const n = (_state.dogs.length) || 1;
     return net / n;
   }
   // Legacy: single dogId
